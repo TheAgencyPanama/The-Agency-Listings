@@ -29,37 +29,49 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-height:100vh;}
 
-/* ── HEADER ── */
-header{background:var(--black);display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(0,0,0,0.4);}
-.logo{display:flex;align-items:center;gap:12px;}
-.logo-mark{width:36px;height:36px;background:var(--red);display:flex;align-items:center;justify-content:center;font-family:var(--font-sans);font-weight:700;font-size:14px;color:var(--white);letter-spacing:-1px;flex-shrink:0;}
-.logo-text{display:flex;flex-direction:column;line-height:1.2;}
-.logo-text .t1{font-family:var(--font-sans);font-size:12px;font-weight:600;letter-spacing:3.5px;text-transform:uppercase;color:var(--white);}
-.logo-text .t2{font-family:var(--font-sans);font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--taupe);}
-.hdr-right{display:flex;align-items:center;gap:16px;}
-.lang-toggle{display:flex;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;border:1px solid rgba(255,255,255,0.12);}
-.lang-btn{padding:5px 12px;font-size:11px;font-weight:600;letter-spacing:1px;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,0.45);transition:all .18s;}
+/* ── TOP BAR (two-column header like dashboard) ── */
+.top-bar{display:flex;position:sticky;top:0;z-index:200;box-shadow:0 2px 20px rgba(0,0,0,0.18);}
+
+/* Left black panel */
+.top-left{width:280px;min-width:280px;background:var(--black);padding:20px 22px 0;display:flex;flex-direction:column;}
+.logo-mark{width:40px;height:40px;background:var(--red);display:flex;align-items:center;justify-content:center;font-family:var(--font-sans);font-weight:700;font-size:15px;color:var(--white);letter-spacing:-1px;margin-bottom:10px;}
+.logo-eyebrow{font-family:var(--font-sans);font-size:8px;font-weight:700;letter-spacing:3.5px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:3px;}
+.logo-brand{font-family:var(--font-serif);font-size:16px;font-weight:500;color:var(--white);line-height:1.2;}
+.logo-sub{font-family:var(--font-sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--taupe);margin-top:1px;}
+
+/* Right white panel */
+.top-right{flex:1;background:var(--white);border-bottom:1px solid var(--border);display:flex;flex-direction:column;min-width:0;}
+.top-title-row{display:flex;align-items:flex-start;justify-content:space-between;padding:18px 28px 14px;gap:20px;}
+.top-title-left{}
+.top-title{font-family:var(--font-serif);font-size:26px;font-weight:500;color:var(--black);letter-spacing:-.5px;line-height:1.15;margin-bottom:5px;}
+.top-breadcrumb{font-family:var(--font-sans);font-size:9px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-muted);}
+.top-breadcrumb .bc-active{color:var(--red);}
+
+/* Stats inline top-right */
+.stats-inline{display:flex;align-items:flex-start;gap:20px;flex-shrink:0;}
+.si{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+.si-val{font-family:var(--font-serif);font-size:22px;font-weight:600;color:var(--black);letter-spacing:-.5px;line-height:1;}
+.si-lbl{font-size:8.5px;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);font-weight:600;white-space:nowrap;}
+.si-div{width:1px;background:var(--border);align-self:stretch;margin-top:4px;}
+
+/* Lang toggle */
+.lang-toggle{display:flex;background:var(--cream);border-radius:4px;overflow:hidden;border:1px solid var(--border);align-self:flex-start;}
+.lang-btn{padding:5px 11px;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;border:none;background:transparent;color:var(--text-muted);transition:all .18s;}
 .lang-btn.active{background:var(--red);color:var(--white);}
-.upd-txt{font-size:10px;color:rgba(255,255,255,0.28);letter-spacing:.5px;}
 
-/* ── TABS ── */
-.tabs-bar{background:var(--black);border-top:1px solid rgba(255,255,255,0.07);display:flex;padding:0 28px;}
-.tab-btn{padding:13px 24px;font-family:var(--font-sans);font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,0.35);border-bottom:2px solid transparent;transition:all .18s;}
+/* Tabs row (white background, red active) */
+.tabs-bar{background:var(--white);border-top:1px solid var(--border);display:flex;padding:0 28px;align-items:center;}
+.tab-btn{padding:11px 22px;font-family:var(--font-sans);font-size:9.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;cursor:pointer;border:none;background:transparent;color:var(--text-muted);border-bottom:2px solid transparent;transition:all .18s;}
 .tab-btn.active{color:var(--red);border-bottom-color:var(--red);}
-.tab-btn:hover:not(.active){color:rgba(255,255,255,0.7);}
-
-/* ── STATS BAR ── */
-.stats-bar{background:var(--white);border-bottom:1px solid var(--border);display:flex;padding:14px 28px;gap:28px;flex-wrap:wrap;align-items:center;}
-.stat{display:flex;flex-direction:column;gap:2px;}
-.stat-val{font-family:var(--font-serif);font-size:22px;font-weight:600;color:var(--black);letter-spacing:-.5px;}
-.stat-lbl{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);font-weight:500;}
-.stat-div{width:1px;background:var(--border);align-self:stretch;}
+.tab-btn:hover:not(.active){color:var(--black);}
+.tab-bullet{color:var(--red);margin-right:6px;font-size:8px;}
+.upd-txt{font-size:9.5px;color:var(--text-muted);letter-spacing:.5px;margin-left:auto;padding-right:4px;}
 
 /* ── LAYOUT ── */
-.layout{display:flex;min-height:calc(100vh - 130px);}
+.layout{display:flex;min-height:calc(100vh - 118px);}
 
 /* ── SIDEBAR ── */
-.sidebar{width:268px;min-width:268px;background:var(--white);border-right:1px solid var(--border);padding:22px 18px;position:sticky;top:130px;height:calc(100vh - 130px);overflow-y:auto;}
+.sidebar{width:280px;min-width:280px;background:var(--white);border-right:1px solid var(--border);padding:22px 18px;position:sticky;top:120px;height:calc(100vh - 120px);overflow-y:auto;}
 .sb-title{font-family:var(--font-sans);font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--red);margin-bottom:20px;}
 .fg{margin-bottom:20px;}
 .fg label{display:block;font-size:9.5px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
@@ -250,44 +262,48 @@ header{background:var(--black);display:flex;align-items:center;justify-content:s
 
 
 
-<header>
-  <div class="logo">
-    <div class="logo-mark">TA</div>
-    <div class="logo-text">
-      <span class="t1" data-en="THE AGENCY RE" data-es="THE AGENCY RE">THE AGENCY RE</span>
-      <span class="t2" data-en="PANAMA MARKET DASHBOARD" data-es="DASHBOARD DE MERCADO">PANAMA MARKET DASHBOARD</span>
+<div class="top-bar">
+  <div class="top-left">
+    <div class="logo-mark">A</div>
+    <div class="logo-eyebrow">INTELLIGENCE REPORT</div>
+    <div class="logo-brand">The Agency RE</div>
+    <div class="logo-sub">Panama</div>
+  </div>
+  <div class="top-right">
+    <div class="top-title-row">
+      <div class="top-title-left">
+        <div class="top-title" data-en="ReVa — Panama Market" data-es="ReVa — Mercado Panamá">ReVa — Panama Market</div>
+        <div class="top-breadcrumb">REAL-TIME DATA · 6 SOURCES · <span class="bc-active" id="updTxt">UPDATED: MAY 2026</span></div>
+      </div>
+      <div class="stats-inline">
+        <div class="si"><span class="si-val" id="s-total">—</span><span class="si-lbl">LISTINGS</span></div>
+        <div class="si-div"></div>
+        <div class="si"><span class="si-val" id="s-avg">—</span><span class="si-lbl">AVG PRICE</span></div>
+        <div class="si-div"></div>
+        <div class="si"><span class="si-val" id="s-src">—</span><span class="si-lbl">SOURCES</span></div>
+        <div class="si-div"></div>
+        <div class="si"><span class="si-val" id="s-min">—</span><span class="si-lbl">MIN PRICE</span></div>
+        <div style="margin-left:12px">
+          <div class="lang-toggle">
+            <button class="lang-btn active" onclick="setLang('en')">EN</button>
+            <button class="lang-btn" onclick="setLang('es')">ES</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tabs-bar">
+      <span class="tab-bullet">◆</span>
+      <button class="tab-btn active" id="tab-sale" onclick="setTab('sale')" data-en="FOR SALE" data-es="EN VENTA">FOR SALE</button>
+      <button class="tab-btn" id="tab-rent" onclick="setTab('rent')" data-en="FOR RENT" data-es="EN ALQUILER">FOR RENT</button>
+      <button class="tab-btn" id="tab-analysis" onclick="setTab('analysis')" data-en="⚖ PRICE ANALYSIS" data-es="⚖ ANÁLISIS">⚖ PRICE ANALYSIS</button>
+      <span class="upd-txt" id="updTxt2"></span>
     </div>
   </div>
-  <div class="hdr-right">
-    <span class="upd-txt" id="updTxt"></span>
-    <div class="lang-toggle">
-      <button class="lang-btn active" onclick="setLang('en')">EN</button>
-      <button class="lang-btn" onclick="setLang('es')">ES</button>
-    </div>
-  </div>
-</header>
-
-<div class="tabs-bar">
-  <button class="tab-btn active" id="tab-sale" onclick="setTab('sale')" data-en="FOR SALE" data-es="EN VENTA">FOR SALE</button>
-  <button class="tab-btn" id="tab-rent" onclick="setTab('rent')" data-en="FOR RENT" data-es="EN ALQUILER">FOR RENT</button>
-  <button class="tab-btn" id="tab-analysis" onclick="setTab('analysis')" data-en="⚖ PRICE ANALYSIS" data-es="⚖ ANÁLISIS DE PRECIO">⚖ PRICE ANALYSIS</button>
 </div>
 
 <!-- Mobile sidebar toggle -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileSidebar()"></div>
 <button class="mob-filter-btn" onclick="toggleMobileSidebar()" title="Filters">⚙</button>
-
-<div class="stats-bar">
-  <div class="stat"><span class="stat-val" id="s-total">—</span><span class="stat-lbl" data-en="LISTINGS" data-es="PROPIEDADES">LISTINGS</span></div>
-  <div class="stat-div"></div>
-  <div class="stat"><span class="stat-val" id="s-avg">—</span><span class="stat-lbl" data-en="AVG PRICE" data-es="PRECIO PROMEDIO">AVG PRICE</span></div>
-  <div class="stat-div"></div>
-  <div class="stat"><span class="stat-val" id="s-min">—</span><span class="stat-lbl" data-en="MIN PRICE" data-es="PRECIO MÍNIMO">MIN PRICE</span></div>
-  <div class="stat-div"></div>
-  <div class="stat"><span class="stat-val" id="s-max">—</span><span class="stat-lbl" data-en="MAX PRICE" data-es="PRECIO MÁXIMO">MAX PRICE</span></div>
-  <div class="stat-div"></div>
-  <div class="stat"><span class="stat-val" id="s-src">—</span><span class="stat-lbl" data-en="SOURCES" data-es="FUENTES">SOURCES</span></div>
-</div>
 
 <div class="layout">
   <aside class="sidebar">
@@ -699,7 +715,7 @@ function applyFilters() {
   document.getElementById('s-total').textContent = filtered.length.toLocaleString('en-US');
   document.getElementById('s-avg').textContent   = prices.length ? fmt(Math.round(prices.reduce((a,b) => a+b, 0) / prices.length)) : '—';
   document.getElementById('s-min').textContent   = prices.length ? fmt(Math.min(...prices)) : '—';
-  document.getElementById('s-max').textContent   = prices.length ? fmt(Math.max(...prices)) : '—';
+  const sMax = document.getElementById('s-max'); if (sMax) sMax.textContent = prices.length ? fmt(Math.max(...prices)) : '—';
   document.getElementById('s-src').textContent   = new Set(filtered.map(l => l.source)).size;
 
   visible = PAGE;
