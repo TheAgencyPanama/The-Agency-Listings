@@ -177,8 +177,18 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
 .rv{font-family:var(--font-serif);font-size:17px;font-weight:600;color:var(--black);}
 .rl{font-family:var(--font-sans);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-top:3px;}
 .comp-sec-lbl{font-family:var(--font-sans);font-size:9.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--red);margin-bottom:10px;}
-.comp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
-.comp-card{background:var(--white);border:1px solid var(--border);border-radius:6px;padding:12px 14px;}
+.comp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;max-height:520px;overflow-y:auto;padding-right:4px;}
+.comp-grid::-webkit-scrollbar{width:5px;}.comp-grid::-webkit-scrollbar-track{background:transparent;}.comp-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.comp-card{background:var(--white);border:1px solid var(--border);border-radius:6px;padding:12px 14px;transition:border-color .15s;}
+.comp-card.selected{border-color:var(--red);background:#fff8f8;}
+.comp-checkbox{width:14px;height:14px;accent-color:var(--red);cursor:pointer;flex-shrink:0;}
+.comp-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.comp-bar-left{display:flex;align-items:center;gap:10px;}
+.btn-comp-export{padding:6px 13px;background:var(--red);color:var(--white);border:none;border-radius:var(--radius);font-family:var(--font-sans);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:background .18s;white-space:nowrap;}
+.btn-comp-export:hover{background:var(--red-dark);}
+.btn-comp-export:disabled{background:#ccc;cursor:not-allowed;}
+.comp-sel-count{font-family:var(--font-sans);font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);}
+.btn-ana-reset{padding:12px 14px;background:transparent;border:1px solid var(--border);border-radius:var(--radius);font-size:16px;cursor:pointer;color:var(--text-muted);transition:all .18s;white-space:nowrap;}.btn-ana-reset:hover{border-color:var(--red);color:var(--red);}
 
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:4px;}
@@ -219,6 +229,7 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
   .logo-text .t2{display:none;}
 }
 </style>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -447,8 +458,9 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
               <option value="rent" data-en="For Rent" data-es="En Alquiler">For Rent</option>
             </select>
           </div>
-          <div class="fg2">
-            <button class="btn-ana" onclick="runAnalysis()" data-en="ANALYZE →" data-es="ANALIZAR →">ANALYZE →</button>
+          <div class="fg2" style="display:flex;gap:8px;align-items:flex-end">
+            <button class="btn-ana" style="flex:1" onclick="runAnalysis()" data-en="ANALYZE →" data-es="ANALIZAR →">ANALYZE →</button>
+            <button class="btn-ana-reset" onclick="resetAnalysis()" title="Reset" data-en="↺" data-es="↺">↺</button>
           </div>
         </div>
         <div class="ana-result" id="anaResult">
@@ -483,6 +495,7 @@ const SOURCES = {
 };
 
 let currentTab = 'sale', currentLang = 'en', filtered = [], visible = 24;
+let anaComparables = [], anaOperation = 'sale';
 const PAGE = 24;
 
 // ── LANGUAGE ──────────────────────────────────────────
@@ -822,6 +835,12 @@ function resetFilters() {
   applyFilters();
 }
 
+function resetAnalysis() {
+  ['aNhood','aBeds','aBaths','aPropType','aOp'].forEach(id => { const el = document.getElementById(id); if (el) el.value = el.tagName === 'SELECT' ? '' : ''; });
+  ['aM2','aPrice'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const r = document.getElementById('anaResult'); if (r) r.style.display = 'none';
+}
+
 // ── PRICE ANALYSIS ────────────────────────────────────
 function runAnalysis() {
   const neighborhood = document.getElementById('aNhood')?.value;
@@ -861,6 +880,7 @@ function runAnalysis() {
   };
 
   let comparables = [], expandScope = '';
+  anaOperation = operation;
 
   // Attempt 1: same neighborhood, ±40% size
   comparables = ALL_DATA.filter(l => {
@@ -924,11 +944,19 @@ function runAnalysis() {
     <div class="range-box"><div class="rv">${fmtFull(maxPrice)}</div><div class="rl">MAX PRICE</div></div>
     <div class="range-box"><div class="rv">${comparables.length}</div><div class="rl">COMPARABLES</div></div>`;
 
-  const shown = Math.min(24, comparables.length);
+  anaComparables = comparables;
   const compLabel = document.getElementById('compSecLbl');
-  if (compLabel) compLabel.textContent = `COMPARABLE LISTINGS (${shown} of ${comparables.length})`;
+  if (compLabel) compLabel.textContent = `COMPARABLE LISTINGS (${comparables.length})`;
 
-  document.getElementById('compGrid').innerHTML = comparables.slice(0, 24).map(l => {
+  // Render selection bar
+  const compBar = document.getElementById('compBar');
+  if (compBar) {
+    compBar.style.display = 'flex';
+    document.getElementById('compSelCount').textContent = '0 selected';
+    document.getElementById('compExportBtn').disabled = true;
+  }
+
+  document.getElementById('compGrid').innerHTML = comparables.map((l, idx) => {
     const compPrice = operation === 'rent' ? l.price_rent : l.price_sale;
     const compSrc   = SOURCES[l.source] || { bg:'#eee', text:'#444', label: l.source };
     const specs = [
@@ -938,9 +966,12 @@ function runAnalysis() {
       l.parking   ? '🅿 ' + l.parking                          : null,
       l.neighborhood
     ].filter(Boolean).join(' · ');
-    return `<div class="comp-card"${l.link ? ` onclick="window.open('${l.link}','_blank')" style="cursor:pointer"` : ''}>
+    return `<div class="comp-card" data-idx="${idx}" onclick="toggleCompCard(this,event,${idx},'${(l.link||'').replace(/'/g,"\\'")}')">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-        <span class="sbadge" style="background:${compSrc.bg};color:${compSrc.text}">${compSrc.label}</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="checkbox" class="comp-checkbox" onclick="event.stopPropagation()" onchange="onCompCheck()">
+          <span class="sbadge" style="background:${compSrc.bg};color:${compSrc.text}">${compSrc.label}</span>
+        </div>
         <strong style="font-family:var(--font-serif);font-size:14px">${fmtFull(compPrice)}</strong>
       </div>
       <div style="font-size:11.5px;font-weight:500">${l.name || l.building || l.address || '—'}</div>
