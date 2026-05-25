@@ -475,8 +475,19 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
             </div>
           </div>
           <div class="range-grid" id="rangeGrid"></div>
-          <div class="comp-sec-lbl" id="compSecLbl" data-en="COMPARABLE LISTINGS" data-es="PROPIEDADES COMPARABLES">COMPARABLE LISTINGS</div>
+          <div class="comp-bar" id="compBar" style="display:none;">
+            <div class="comp-bar-left">
+              <div class="comp-sec-lbl" id="compSecLbl">COMPARABLE LISTINGS</div>
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;color:var(--text-muted);font-family:var(--font-sans);font-weight:600;letter-spacing:1px;text-transform:uppercase;">
+                <input type="checkbox" id="compSelectAll" onchange="toggleSelectAll(this)" style="width:13px;height:13px;accent-color:var(--red);">ALL
+              </label>
+              <span class="comp-sel-count" id="compSelCount">0 selected</span>
+            </div>
+          </div>
           <div class="comp-grid" id="compGrid"></div>
+          <div id="compExportBar" style="display:none;margin-top:14px;text-align:center;">
+            <button class="btn-comp-export" id="compExportBtn" onclick="exportComps()" style="padding:11px 28px;font-size:11px;letter-spacing:2px;">⬇ EXPORT SELECTED TO EXCEL</button>
+          </div>
         </div>
       </div>
     </div>
@@ -918,7 +929,9 @@ function runAnalysis() {
   const avgPrice = Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
   const minPrice = Math.min(...prices), maxPrice = Math.max(...prices);
   const ratio    = userPrice / avgPrice;
-  const pinPos   = Math.max(3, Math.min(97, ((userPrice - minPrice) / (maxPrice - minPrice || 1)) * 100));
+  // Position pin based on ratio vs average (not vs outlier-distorted min/max range)
+  // ratio 0.70 → 5%  |  1.00 → 50%  |  1.30 → 95%
+  const pinPos   = Math.max(3, Math.min(97, ((ratio - 0.70) / 0.60) * 90 + 5));
 
   let icon, color, title, summary;
   if (ratio < 0.85)       { icon='🟢'; color='#16a34a'; title='Below Market Price';    summary=`Your price is ${Math.round((1-ratio)*100)}% below average. Very competitive.`; }
@@ -953,8 +966,9 @@ function runAnalysis() {
   if (compBar) {
     compBar.style.display = 'flex';
     document.getElementById('compSelCount').textContent = '0 selected';
-    document.getElementById('compExportBtn').disabled = true;
   }
+  const compExportBar = document.getElementById('compExportBar');
+  if (compExportBar) compExportBar.style.display = 'none';
 
   document.getElementById('compGrid').innerHTML = comparables.map((l, idx) => {
     const compPrice = operation === 'rent' ? l.price_rent : l.price_sale;
@@ -978,6 +992,84 @@ function runAnalysis() {
       <div style="font-size:10px;color:var(--text-muted);margin-top:3px">${specs}</div>
     </div>`;
   }).join('');
+}
+
+// ── COMPARABLE SELECTION & EXPORT ────────────────────
+function toggleCompCard(card, event, idx, link) {
+  const cb = card.querySelector('.comp-checkbox');
+  cb.checked = !cb.checked;
+  card.classList.toggle('selected', cb.checked);
+  onCompCheck();
+}
+function onCompCheck() {
+  const cards = document.querySelectorAll('#compGrid .comp-card');
+  const checked = [...cards].filter(c => c.querySelector('.comp-checkbox')?.checked);
+  const n = checked.length;
+  document.getElementById('compSelCount').textContent = n + ' selected';
+  const bar = document.getElementById('compExportBar');
+  if (bar) bar.style.display = n > 0 ? 'block' : 'none';
+  const all = document.getElementById('compSelectAll');
+  if (all) { all.indeterminate = n > 0 && n < cards.length; all.checked = n === cards.length; }
+}
+function toggleSelectAll(allCb) {
+  document.querySelectorAll('#compGrid .comp-card').forEach(card => {
+    const cb = card.querySelector('.comp-checkbox');
+    cb.checked = allCb.checked;
+    card.classList.toggle('selected', allCb.checked);
+  });
+  onCompCheck();
+}
+function exportComps() {
+  const cards = [...document.querySelectorAll('#compGrid .comp-card')].filter(c => c.querySelector('.comp-checkbox')?.checked);
+  if (!cards.length) return;
+  const indices = cards.map(c => parseInt(c.dataset.idx));
+  const selected = indices.map(i => anaComparables[i]).filter(Boolean);
+  const neighborhood = document.getElementById('aNhood')?.value || 'Panama';
+
+  const wb = XLSX.utils.book_new();
+  const rows = [];
+  // Title rows
+  rows.push(['', neighborhood + ' — Comparable Listings', '', '', '', '', '', '']);
+  rows.push([]);
+  rows.push(['Name', 'Neighborhood', 'Price ($)', 'Size (m²)', 'Price/m²', 'Bedrooms', 'Bathrooms', 'Source', 'Link']);
+  selected.forEach(l => {
+    const price = anaOperation === 'rent' ? l.price_rent : l.price_sale;
+    const m2    = parseFloat(l.const_m2) || 0;
+    const ppm2  = (price && m2) ? Math.round(price / m2) : '';
+    rows.push([
+      l.name || l.building || '',
+      l.neighborhood || '',
+      price || '',
+      m2 || '',
+      ppm2,
+      l.bedrooms  || '',
+      l.bathrooms || '',
+      (SOURCES[l.source] || { label: l.source }).label,
+      l.link || '',
+    ]);
+  });
+  // Average row
+  const prices = selected.map(l => anaOperation === 'rent' ? l.price_rent : l.price_sale).filter(Boolean);
+  const m2s    = selected.map(l => parseFloat(l.const_m2)).filter(v => v > 0);
+  const ppms   = selected.map(l => { const p = anaOperation==='rent'?l.price_rent:l.price_sale; const m=parseFloat(l.const_m2); return (p&&m)?p/m:null; }).filter(Boolean);
+  rows.push([]);
+  if (ppms.length) {
+    const avgPpm2 = Math.round(ppms.reduce((a,b)=>a+b,0)/ppms.length);
+    const avgP    = Math.round(prices.reduce((a,b)=>a+b,0)/prices.length);
+    rows.push(['', 'AVERAGE', avgP, m2s.length ? Math.round(m2s.reduce((a,b)=>a+b,0)/m2s.length) : '', avgPpm2, '', '', '', '']);
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  // Column widths
+  ws['!cols'] = [{wch:32},{wch:18},{wch:14},{wch:10},{wch:10},{wch:10},{wch:12},{wch:18},{wch:50}];
+  // Bold title + header
+  const bold = { font: { bold: true } };
+  if (ws['B1']) ws['B1'].s = { font: { bold: true, sz: 14 } };
+  ['A3','B3','C3','D3','E3','F3','G3','H3','I3'].forEach(ref => { if (ws[ref]) ws[ref].s = bold; });
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Comparables');
+  const fname = 'Comparables_' + neighborhood.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
+  XLSX.writeFile(wb, fname);
 }
 
 // Use both events for maximum mobile compatibility — initDone flag prevents double call
