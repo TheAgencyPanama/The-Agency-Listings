@@ -229,7 +229,7 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
   .logo-text .t2{display:none;}
 }
 </style>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 </head>
 <body>
 
@@ -983,7 +983,7 @@ function runAnalysis() {
     return `<div class="comp-card" data-idx="${idx}" onclick="toggleCompCard(this,event,${idx},'${(l.link||'').replace(/'/g,"\\'")}')">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
         <div style="display:flex;align-items:center;gap:6px">
-          <input type="checkbox" class="comp-checkbox" onclick="event.stopPropagation()" onchange="onCompCheck()">
+          <input type="checkbox" class="comp-checkbox" onclick="event.stopPropagation()" onchange="this.closest('.comp-card').classList.toggle('selected',this.checked);onCompCheck()">
           <span class="sbadge" style="background:${compSrc.bg};color:${compSrc.text}">${compSrc.label}</span>
         </div>
         <strong style="font-family:var(--font-serif);font-size:14px">${fmtFull(compPrice)}</strong>
@@ -996,10 +996,8 @@ function runAnalysis() {
 
 // ── COMPARABLE SELECTION & EXPORT ────────────────────
 function toggleCompCard(card, event, idx, link) {
-  const cb = card.querySelector('.comp-checkbox');
-  cb.checked = !cb.checked;
-  card.classList.toggle('selected', cb.checked);
-  onCompCheck();
+  if (event.target.type === 'checkbox') return;
+  if (link) window.open(link, '_blank');
 }
 function onCompCheck() {
   const cards = document.querySelectorAll('#compGrid .comp-card');
@@ -1019,57 +1017,156 @@ function toggleSelectAll(allCb) {
   });
   onCompCheck();
 }
-function exportComps() {
+async function exportComps() {
   const cards = [...document.querySelectorAll('#compGrid .comp-card')].filter(c => c.querySelector('.comp-checkbox')?.checked);
   if (!cards.length) return;
-  const indices = cards.map(c => parseInt(c.dataset.idx));
-  const selected = indices.map(i => anaComparables[i]).filter(Boolean);
+  const btn = document.getElementById('compExportBtn');
+  if (btn) { btn.textContent = '⏳ Generating...'; btn.disabled = true; }
+
+  const selected = cards.map(c => anaComparables[parseInt(c.dataset.idx)]).filter(Boolean);
   const neighborhood = document.getElementById('aNhood')?.value || 'Panama';
 
-  const wb = XLSX.utils.book_new();
-  const rows = [];
-  // Title rows
-  rows.push(['', neighborhood + ' — Comparable Listings', '', '', '', '', '', '']);
-  rows.push([]);
-  rows.push(['Name', 'Neighborhood', 'Price ($)', 'Size (m²)', 'Price/m²', 'Bedrooms', 'Bathrooms', 'Source', 'Link']);
-  selected.forEach(l => {
-    const price = anaOperation === 'rent' ? l.price_rent : l.price_sale;
-    const m2    = parseFloat(l.const_m2) || 0;
-    const ppm2  = (price && m2) ? Math.round(price / m2) : '';
-    rows.push([
-      l.name || l.building || '',
-      l.neighborhood || '',
-      price || '',
-      m2 || '',
-      ppm2,
-      l.bedrooms  || '',
-      l.bathrooms || '',
-      (SOURCES[l.source] || { label: l.source }).label,
-      l.link || '',
-    ]);
+  // ── Colours ──────────────────────────────────────────
+  const BLACK  = '1A1A1A', WHITE = 'FFFFFFFF', RED = 'FFCC0000',
+        REDLT  = 'FFFFF0F0', GRAY1 = 'FFF8F8F8', GRAY2 = 'FFFFFFFF',
+        BORDER = 'FFD0D0D0';
+
+  const thin = c => ({ style:'thin', color:{ argb: c } });
+  const allBorders = c => ({ top:thin(c), bottom:thin(c), left:thin(c), right:thin(c) });
+
+  // ── Workbook ─────────────────────────────────────────
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'The Agency RE Panama';
+  const ws = wb.addWorksheet('Comparables', { views:[{ showGridLines:false }] });
+
+  ws.columns = [
+    { key:'name',  width:38 },
+    { key:'hood',  width:18 },
+    { key:'price', width:16 },
+    { key:'size',  width:12 },
+    { key:'ppm2',  width:13 },
+    { key:'beds',  width:9  },
+    { key:'baths', width:9  },
+    { key:'src',   width:20 },
+  ];
+
+  // ── Row 1: Title ─────────────────────────────────────
+  const titleRow = ws.addRow([neighborhood + '  —  Comparable Listings']);
+  ws.mergeCells('A1:H1');
+  titleRow.height = 36;
+  const t = titleRow.getCell('A');
+  t.value = neighborhood + '  —  Comparable Listings';
+  t.font  = { name:'Arial', bold:true, size:15, color:{ argb:WHITE } };
+  t.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:BLACK } };
+  t.alignment = { vertical:'middle', horizontal:'left', indent:2 };
+
+  // ── Row 2: Subtitle / date ───────────────────────────
+  const subRow = ws.addRow(['The Agency RE Panama  ·  Market Comparables  ·  ' + new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})]);
+  ws.mergeCells('A2:H2');
+  subRow.height = 18;
+  const s = subRow.getCell('A');
+  s.font  = { name:'Arial', size:9, italic:true, color:{ argb:'FFB0B0B0' } };
+  s.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:BLACK } };
+  s.alignment = { vertical:'middle', horizontal:'left', indent:2 };
+
+  // ── Row 3: Spacer ────────────────────────────────────
+  const spacer = ws.addRow([]);
+  spacer.height = 6;
+
+  // ── Row 4: Headers ───────────────────────────────────
+  const HEADERS = ['Name','Neighborhood','Price ($)','Size (m²)','Price / m²','Beds','Baths','Source'];
+  const hRow = ws.addRow(HEADERS);
+  hRow.height = 24;
+  hRow.eachCell((cell, col) => {
+    cell.font      = { name:'Arial', bold:true, size:10, color:{ argb:WHITE } };
+    cell.fill      = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFCC0000' } };
+    cell.alignment = { vertical:'middle', horizontal: col===1 ? 'left' : 'center', indent: col===1 ? 1 : 0 };
+    cell.border    = allBorders('FFCC0000');
   });
-  // Average row
-  const prices = selected.map(l => anaOperation === 'rent' ? l.price_rent : l.price_sale).filter(Boolean);
-  const m2s    = selected.map(l => parseFloat(l.const_m2)).filter(v => v > 0);
-  const ppms   = selected.map(l => { const p = anaOperation==='rent'?l.price_rent:l.price_sale; const m=parseFloat(l.const_m2); return (p&&m)?p/m:null; }).filter(Boolean);
-  rows.push([]);
+
+  // ── Data rows ─────────────────────────────────────────
+  selected.forEach((l, i) => {
+    const price = anaOperation==='rent' ? l.price_rent : l.price_sale;
+    const m2    = parseFloat(l.const_m2) || 0;
+    const ppm2  = (price && m2) ? Math.round(price / m2) : null;
+    const bg    = i % 2 === 0 ? GRAY2 : GRAY1;
+
+    const row = ws.addRow([
+      l.name || l.building || '—',
+      l.neighborhood || '—',
+      price   || null,
+      m2      || null,
+      ppm2,
+      l.bedrooms  ? Number(l.bedrooms)  : null,
+      l.bathrooms ? Number(l.bathrooms) : null,
+      (SOURCES[l.source]||{label:l.source}).label,
+    ]);
+    row.height = 20;
+
+    row.eachCell({ includeEmpty:true }, (cell, col) => {
+      cell.font      = { name:'Arial', size:10, color:{ argb:BLACK } };
+      cell.fill      = { type:'pattern', pattern:'solid', fgColor:{ argb:bg } };
+      cell.alignment = { vertical:'middle', horizontal: col===1 ? 'left' : 'center', indent: col===1 ? 1 : 0 };
+      cell.border    = allBorders(BORDER);
+    });
+
+    // Number formats
+    if (price) { row.getCell(3).numFmt = '$#,##0'; }
+    if (m2)    { row.getCell(4).numFmt = '#,##0'; }
+    if (ppm2)  { row.getCell(5).numFmt = '$#,##0'; }
+
+    // Hyperlink on Name
+    if (l.link) {
+      row.getCell(1).value = { text: l.name || l.building || '—', hyperlink: l.link };
+      row.getCell(1).font  = { name:'Arial', size:10, color:{ argb:'FF0563C1' }, underline:true };
+    }
+  });
+
+  // ── Average Price/m² row ──────────────────────────────
+  const ppms = selected.map(l => {
+    const p = anaOperation==='rent' ? l.price_rent : l.price_sale;
+    const m = parseFloat(l.const_m2);
+    return (p && m) ? p/m : null;
+  }).filter(Boolean);
+
   if (ppms.length) {
+    ws.addRow([]).height = 8; // spacer
     const avgPpm2 = Math.round(ppms.reduce((a,b)=>a+b,0)/ppms.length);
-    const avgP    = Math.round(prices.reduce((a,b)=>a+b,0)/prices.length);
-    rows.push(['', 'AVERAGE', avgP, m2s.length ? Math.round(m2s.reduce((a,b)=>a+b,0)/m2s.length) : '', avgPpm2, '', '', '', '']);
+    const avgRow  = ws.addRow(['AVERAGE PRICE / m²','','','',avgPpm2,'','','']);
+    avgRow.height = 24;
+    ws.mergeCells(`A${avgRow.number}:D${avgRow.number}`);
+    const lbl = avgRow.getCell(1);
+    lbl.value     = 'AVERAGE PRICE / m²';
+    lbl.font      = { name:'Arial', bold:true, size:10, color:{ argb:'FFCC0000' } };
+    lbl.fill      = { type:'pattern', pattern:'solid', fgColor:{ argb:REDLT } };
+    lbl.alignment = { vertical:'middle', horizontal:'right', indent:1 };
+    lbl.border    = allBorders(BORDER);
+
+    const val = avgRow.getCell(5);
+    val.value     = avgPpm2;
+    val.numFmt    = '$#,##0';
+    val.font      = { name:'Arial', bold:true, size:12, color:{ argb:'FFCC0000' } };
+    val.fill      = { type:'pattern', pattern:'solid', fgColor:{ argb:REDLT } };
+    val.alignment = { vertical:'middle', horizontal:'center' };
+    val.border    = allBorders(BORDER);
+    [6,7,8].forEach(c => {
+      const cell = avgRow.getCell(c);
+      cell.fill   = { type:'pattern', pattern:'solid', fgColor:{ argb:REDLT } };
+      cell.border = allBorders(BORDER);
+    });
   }
 
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  // Column widths
-  ws['!cols'] = [{wch:32},{wch:18},{wch:14},{wch:10},{wch:10},{wch:10},{wch:12},{wch:18},{wch:50}];
-  // Bold title + header
-  const bold = { font: { bold: true } };
-  if (ws['B1']) ws['B1'].s = { font: { bold: true, sz: 14 } };
-  ['A3','B3','C3','D3','E3','F3','G3','H3','I3'].forEach(ref => { if (ws[ref]) ws[ref].s = bold; });
+  // ── Download ──────────────────────────────────────────
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob   = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url    = URL.createObjectURL(blob);
+  const a      = document.createElement('a');
+  a.href = url;
+  a.download = 'Comparables_' + neighborhood.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
+  a.click();
+  URL.revokeObjectURL(url);
 
-  XLSX.utils.book_append_sheet(wb, ws, 'Comparables');
-  const fname = 'Comparables_' + neighborhood.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
-  XLSX.writeFile(wb, fname);
+  if (btn) { btn.textContent = '⬇ EXPORT SELECTED TO EXCEL'; btn.disabled = false; }
 }
 
 // Use both events for maximum mobile compatibility — initDone flag prevents double call
