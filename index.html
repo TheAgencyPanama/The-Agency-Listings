@@ -229,7 +229,7 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
   .logo-text .t2{display:none;}
 }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 </head>
 <body>
 
@@ -1017,7 +1017,7 @@ function toggleSelectAll(allCb) {
   });
   onCompCheck();
 }
-async function exportComps() {
+function exportComps() {
   const cards = [...document.querySelectorAll('#compGrid .comp-card')].filter(c => c.querySelector('.comp-checkbox')?.checked);
   if (!cards.length) return;
   const btn = document.getElementById('compExportBtn');
@@ -1025,146 +1025,146 @@ async function exportComps() {
 
   const selected = cards.map(c => anaComparables[parseInt(c.dataset.idx)]).filter(Boolean);
   const neighborhood = document.getElementById('aNhood')?.value || 'Panama';
+  const dateStr = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
 
-  // ── Colours ──────────────────────────────────────────
-  const BLACK  = '1A1A1A', WHITE = 'FFFFFFFF', RED = 'FFCC0000',
-        REDLT  = 'FFFFF0F0', GRAY1 = 'FFF8F8F8', GRAY2 = 'FFFFFFFF',
-        BORDER = 'FFD0D0D0';
+  // ── Style helpers ────────────────────────────────────
+  const fill  = rgb => ({ patternType:'solid', fgColor:{ rgb } });
+  const font  = (rgb, sz, bold, ul) => ({ name:'Arial', color:{ rgb }, sz: sz||10, bold:!!bold, underline:!!ul });
+  const align = (h, v, wrap) => ({ horizontal:h||'left', vertical:v||'center', wrapText:!!wrap });
+  const bord  = rgb => { const s = { style:'thin', color:{ rgb } }; return { top:s, bottom:s, left:s, right:s }; };
 
-  const thin = c => ({ style:'thin', color:{ argb: c } });
-  const allBorders = c => ({ top:thin(c), bottom:thin(c), left:thin(c), right:thin(c) });
+  const BK='1A1A1A', WH='FFFFFF', RD='CC0000', RDLT='FFF0F0', GY='F7F7F7', BD='D8D8D8';
 
-  // ── Workbook ─────────────────────────────────────────
-  const wb = new ExcelJS.Workbook();
-  wb.creator = 'The Agency RE Panama';
-  const ws = wb.addWorksheet('Comparables', { views:[{ showGridLines:false }] });
+  // ── Build rows array ─────────────────────────────────
+  // Row 1: title (will style cell A1)
+  // Row 2: subtitle
+  // Row 3: empty spacer
+  // Row 4: headers
+  // Rows 5+: data
+  // Last rows: empty + average
+  const aoa = [];
+  aoa.push([neighborhood + ' — Comparable Listings','','','','','','','']); // row 1
+  aoa.push(['The Agency RE Panama  ·  ' + dateStr,'','','','','','','']);   // row 2
+  aoa.push(['','','','','','','','']);                                       // row 3 spacer
+  aoa.push(['Name','Neighborhood','Price ($)','Size (m²)','Price / m²','Beds','Baths','Source']); // row 4
 
-  ws.columns = [
-    { key:'name',  width:38 },
-    { key:'hood',  width:18 },
-    { key:'price', width:16 },
-    { key:'size',  width:12 },
-    { key:'ppm2',  width:13 },
-    { key:'beds',  width:9  },
-    { key:'baths', width:9  },
-    { key:'src',   width:20 },
-  ];
-
-  // ── Row 1: Title ─────────────────────────────────────
-  const titleRow = ws.addRow([neighborhood + '  —  Comparable Listings']);
-  ws.mergeCells('A1:H1');
-  titleRow.height = 36;
-  const t = titleRow.getCell('A');
-  t.value = neighborhood + '  —  Comparable Listings';
-  t.font  = { name:'Arial', bold:true, size:15, color:{ argb:WHITE } };
-  t.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:BLACK } };
-  t.alignment = { vertical:'middle', horizontal:'left', indent:2 };
-
-  // ── Row 2: Subtitle / date ───────────────────────────
-  const subRow = ws.addRow(['The Agency RE Panama  ·  Market Comparables  ·  ' + new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})]);
-  ws.mergeCells('A2:H2');
-  subRow.height = 18;
-  const s = subRow.getCell('A');
-  s.font  = { name:'Arial', size:9, italic:true, color:{ argb:'FFB0B0B0' } };
-  s.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:BLACK } };
-  s.alignment = { vertical:'middle', horizontal:'left', indent:2 };
-
-  // ── Row 3: Spacer ────────────────────────────────────
-  const spacer = ws.addRow([]);
-  spacer.height = 6;
-
-  // ── Row 4: Headers ───────────────────────────────────
-  const HEADERS = ['Name','Neighborhood','Price ($)','Size (m²)','Price / m²','Beds','Baths','Source'];
-  const hRow = ws.addRow(HEADERS);
-  hRow.height = 24;
-  hRow.eachCell((cell, col) => {
-    cell.font      = { name:'Arial', bold:true, size:10, color:{ argb:WHITE } };
-    cell.fill      = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFCC0000' } };
-    cell.alignment = { vertical:'middle', horizontal: col===1 ? 'left' : 'center', indent: col===1 ? 1 : 0 };
-    cell.border    = allBorders('FFCC0000');
-  });
-
-  // ── Data rows ─────────────────────────────────────────
-  selected.forEach((l, i) => {
+  const dataStart = 5; // 1-indexed
+  selected.forEach(l => {
     const price = anaOperation==='rent' ? l.price_rent : l.price_sale;
     const m2    = parseFloat(l.const_m2) || 0;
-    const ppm2  = (price && m2) ? Math.round(price / m2) : null;
-    const bg    = i % 2 === 0 ? GRAY2 : GRAY1;
-
-    const row = ws.addRow([
+    const ppm2  = (price && m2) ? Math.round(price/m2) : '';
+    aoa.push([
       l.name || l.building || '—',
       l.neighborhood || '—',
-      price   || null,
-      m2      || null,
+      price || '',
+      m2    || '',
       ppm2,
-      l.bedrooms  ? Number(l.bedrooms)  : null,
-      l.bathrooms ? Number(l.bathrooms) : null,
+      l.bedrooms  || '',
+      l.bathrooms || '',
       (SOURCES[l.source]||{label:l.source}).label,
     ]);
-    row.height = 20;
+  });
 
-    row.eachCell({ includeEmpty:true }, (cell, col) => {
-      cell.font      = { name:'Arial', size:10, color:{ argb:BLACK } };
-      cell.fill      = { type:'pattern', pattern:'solid', fgColor:{ argb:bg } };
-      cell.alignment = { vertical:'middle', horizontal: col===1 ? 'left' : 'center', indent: col===1 ? 1 : 0 };
-      cell.border    = allBorders(BORDER);
-    });
+  const ppms = selected.map(l => { const p=anaOperation==='rent'?l.price_rent:l.price_sale, m=parseFloat(l.const_m2); return (p&&m)?p/m:null; }).filter(Boolean);
+  const avgPpm2 = ppms.length ? Math.round(ppms.reduce((a,b)=>a+b,0)/ppms.length) : null;
+  if (avgPpm2) {
+    aoa.push(['','','','','','','','']);  // spacer
+    aoa.push(['AVERAGE PRICE / m²','','','', avgPpm2 ,'','','']);
+  }
 
-    // Number formats
-    if (price) { row.getCell(3).numFmt = '$#,##0'; }
-    if (m2)    { row.getCell(4).numFmt = '#,##0'; }
-    if (ppm2)  { row.getCell(5).numFmt = '$#,##0'; }
+  // ── Create worksheet ─────────────────────────────────
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-    // Hyperlink on Name
-    if (l.link) {
-      row.getCell(1).value = { text: l.name || l.building || '—', hyperlink: l.link };
-      row.getCell(1).font  = { name:'Arial', size:10, color:{ argb:'FF0563C1' }, underline:true };
+  // Merges: A1:H1, A2:H2, A3:H3
+  ws['!merges'] = [
+    { s:{r:0,c:0}, e:{r:0,c:7} },
+    { s:{r:1,c:0}, e:{r:1,c:7} },
+    { s:{r:2,c:0}, e:{r:2,c:7} },
+  ];
+  if (avgPpm2) {
+    const avgR = dataStart - 1 + selected.length + 1; // 0-indexed
+    ws['!merges'].push({ s:{r:avgR,c:0}, e:{r:avgR,c:3} });
+  }
+
+  // Column widths
+  ws['!cols'] = [{wch:38},{wch:18},{wch:15},{wch:11},{wch:13},{wch:7},{wch:8},{wch:20}];
+  // Row heights
+  ws['!rows'] = [
+    {hpt:30}, // title
+    {hpt:16}, // subtitle
+    {hpt:6},  // spacer
+    {hpt:20}, // headers
+    ...selected.map(()=>({hpt:18})),
+  ];
+
+  // ── Apply cell styles ────────────────────────────────
+  const enc = (r,c) => XLSX.utils.encode_cell({r,c});
+
+  // Title row (row 0)
+  const r0 = ws[enc(0,0)];
+  if(r0){ r0.s = { font:font(WH,15,true), fill:fill(BK), alignment:align('left','center'), border:bord(BK) }; }
+
+  // Subtitle row (row 1)
+  const r1 = ws[enc(1,0)];
+  if(r1){ r1.s = { font:{name:'Arial',color:{rgb:'AAAAAA'},sz:9,italic:true}, fill:fill(BK), alignment:align('left','center'), border:bord(BK) }; }
+
+  // Header row (row 3)
+  for(let c=0;c<8;c++){
+    const cell = ws[enc(3,c)];
+    if(cell) cell.s = {
+      font: font(WH,10,true),
+      fill: fill(RD),
+      alignment: align(c===0?'left':'center','center'),
+      border: bord(RD),
+    };
+  }
+
+  // Data rows
+  selected.forEach((l, i) => {
+    const r = dataStart - 1 + i; // 0-indexed
+    const price = anaOperation==='rent' ? l.price_rent : l.price_sale;
+    const m2    = parseFloat(l.const_m2) || 0;
+    const ppm2  = (price && m2) ? Math.round(price/m2) : null;
+    const bg    = i%2===0 ? 'FFFFFF' : GY;
+    for(let c=0;c<8;c++){
+      let cell = ws[enc(r,c)];
+      if(!cell){ ws[enc(r,c)] = {v:'',t:'s'}; cell = ws[enc(r,c)]; }
+      cell.s = {
+        font: font(BK, 10, false),
+        fill: fill(bg),
+        alignment: align(c===0?'left':'center','center'),
+        border: bord(BD),
+      };
+    }
+    // Price format
+    if(price){ const pc=ws[enc(r,2)]; if(pc){ pc.z='$#,##0'; pc.t='n'; pc.v=price; } }
+    if(m2)   { const mc=ws[enc(r,3)]; if(mc){ mc.z='#,##0';  mc.t='n'; mc.v=m2;   } }
+    if(ppm2) { const sc=ws[enc(r,4)]; if(sc){ sc.z='$#,##0'; sc.t='n'; sc.v=ppm2; } }
+    // Hyperlink + blue underline on Name
+    if(l.link){
+      const nc = ws[enc(r,0)];
+      if(nc){ nc.l = { Target: l.link }; nc.s.font = font('0563C1',10,false,true); }
     }
   });
 
-  // ── Average Price/m² row ──────────────────────────────
-  const ppms = selected.map(l => {
-    const p = anaOperation==='rent' ? l.price_rent : l.price_sale;
-    const m = parseFloat(l.const_m2);
-    return (p && m) ? p/m : null;
-  }).filter(Boolean);
-
-  if (ppms.length) {
-    ws.addRow([]).height = 8; // spacer
-    const avgPpm2 = Math.round(ppms.reduce((a,b)=>a+b,0)/ppms.length);
-    const avgRow  = ws.addRow(['AVERAGE PRICE / m²','','','',avgPpm2,'','','']);
-    avgRow.height = 24;
-    ws.mergeCells(`A${avgRow.number}:D${avgRow.number}`);
-    const lbl = avgRow.getCell(1);
-    lbl.value     = 'AVERAGE PRICE / m²';
-    lbl.font      = { name:'Arial', bold:true, size:10, color:{ argb:'FFCC0000' } };
-    lbl.fill      = { type:'pattern', pattern:'solid', fgColor:{ argb:REDLT } };
-    lbl.alignment = { vertical:'middle', horizontal:'right', indent:1 };
-    lbl.border    = allBorders(BORDER);
-
-    const val = avgRow.getCell(5);
-    val.value     = avgPpm2;
-    val.numFmt    = '$#,##0';
-    val.font      = { name:'Arial', bold:true, size:12, color:{ argb:'FFCC0000' } };
-    val.fill      = { type:'pattern', pattern:'solid', fgColor:{ argb:REDLT } };
-    val.alignment = { vertical:'middle', horizontal:'center' };
-    val.border    = allBorders(BORDER);
-    [6,7,8].forEach(c => {
-      const cell = avgRow.getCell(c);
-      cell.fill   = { type:'pattern', pattern:'solid', fgColor:{ argb:REDLT } };
-      cell.border = allBorders(BORDER);
-    });
+  // Average row
+  if(avgPpm2){
+    const avgR = dataStart - 1 + selected.length + 1; // 0-indexed (skip spacer row)
+    const lbl = ws[enc(avgR,0)];
+    if(lbl){ lbl.s = { font:font(RD,10,true), fill:fill(RDLT), alignment:align('left','center'), border:bord(BD) }; }
+    const val = ws[enc(avgR,4)];
+    if(val){ val.s = { font:font(RD,12,true), fill:fill(RDLT), alignment:align('center','center'), border:bord(BD) }; val.z='$#,##0'; val.t='n'; val.v=avgPpm2; }
+    for(const c of [1,2,3,5,6,7]){
+      let cell=ws[enc(avgR,c)]; if(!cell){ws[enc(avgR,c)]={v:'',t:'s'};cell=ws[enc(avgR,c)];}
+      cell.s = { fill:fill(RDLT), border:bord(BD) };
+    }
   }
 
-  // ── Download ──────────────────────────────────────────
-  const buffer = await wb.xlsx.writeBuffer();
-  const blob   = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  const url    = URL.createObjectURL(blob);
-  const a      = document.createElement('a');
-  a.href = url;
-  a.download = 'Comparables_' + neighborhood.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
-  a.click();
-  URL.revokeObjectURL(url);
+  // ── Download ─────────────────────────────────────────
+  XLSX.utils.book_append_sheet(wb, ws, 'Comparables');
+  const fname = 'Comparables_' + neighborhood.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
+  XLSX.writeFile(wb, fname, { cellStyles: true });
 
   if (btn) { btn.textContent = '⬇ EXPORT SELECTED TO EXCEL'; btn.disabled = false; }
 }
