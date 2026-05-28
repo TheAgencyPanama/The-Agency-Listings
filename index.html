@@ -635,13 +635,14 @@ function init() {
       srcDiv.innerHTML = `<div style="display:flex;justify-content:flex-end;margin-bottom:6px">
         <span onclick="showAllSources()" style="font-size:9.5px;color:var(--red);cursor:pointer;letter-spacing:1px;font-weight:700;text-transform:uppercase">SHOW ALL</span>
       </div>`;
-      Object.entries(SOURCES).forEach(([key, cfg]) => {
-        if (!counts[key]) return;
+      // Build from actual data sources (not just config) so new scrapers appear automatically
+      Object.entries(counts).sort((a,b) => b[1]-a[1]).forEach(([key, count]) => {
+        const cfg = SOURCES[key] || { label: key, color:'#888', bg:'#f5f5f5', text:'#555' };
         srcDiv.innerHTML += `<label class="src-cb" onclick="handleSrcClick(event,'${key}')">
           <input type="checkbox" checked value="${key}">
           <span class="src-dot" style="background:${cfg.color}"></span>
           <span class="src-lbl">${cfg.label}</span>
-          <span class="src-cnt">${counts[key]}</span>
+          <span class="src-cnt">${count}</span>
         </label>`;
       });
     }
