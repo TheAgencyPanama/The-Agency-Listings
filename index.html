@@ -494,7 +494,7 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
   </main>
 </div>
 
-<script src="data.js"></script>
+<script src="data.js?v=20260528"></script>
 <script>
 const SOURCES = {
   'MLS':       { label:'Panama MLS',       color:'#1D4ED8', bg:'#EFF6FF', text:'#1e40af' },
@@ -711,8 +711,9 @@ function applyFilters() {
     }
     // Property type
     if (typeFilter && listing.type && listing.type.toLowerCase() !== typeFilter) return false;
-    // Source
-    if (!activeSources.has(listing.source)) return false;
+    // Source — only filter if a checkbox exists for this source
+    const hasCb = document.querySelector(`#srcFilters input[value="${listing.source}"]`);
+    if (hasCb && !activeSources.has(listing.source)) return false;
     // Neighborhood multi-select
     if (selectedHoods.size > 0 && !selectedHoods.has(listing.neighborhood)) return false;
     // Text search
