@@ -190,6 +190,12 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
 .comp-sel-count{font-family:var(--font-sans);font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);}
 .btn-ana-reset{padding:12px 14px;background:transparent;border:1px solid var(--border);border-radius:var(--radius);font-size:16px;cursor:pointer;color:var(--text-muted);transition:all .18s;white-space:nowrap;}.btn-ana-reset:hover{border-color:var(--red);color:var(--red);}
 
+/* ── GRID SELECTION BAR ── */
+.grid-select-bar{display:none;background:var(--white);border:1px solid var(--red);border-radius:var(--radius);padding:10px 16px;margin-bottom:14px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;box-shadow:0 2px 12px rgba(204,0,0,0.10);}
+.grid-select-bar.active{display:flex;}
+.card-cb{width:15px;height:15px;accent-color:var(--red);cursor:pointer;flex-shrink:0;}
+.card.card-selected{border-color:var(--red)!important;background:#fff8f8;}
+
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:var(--cream);}
@@ -398,6 +404,15 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
         </select>
         <span class="res-count" id="resCnt"></span>
       </div>
+      <!-- Selection bar (appears when cards are checked) -->
+      <div class="grid-select-bar" id="gridSelectBar">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <span style="font-family:var(--font-sans);font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);" id="gridSelCount">0 SELECTED</span>
+          <button onclick="clearGridSelection()" style="padding:5px 11px;background:transparent;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--font-sans);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;color:var(--text-muted);transition:all .18s;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">✕ CLEAR</button>
+        </div>
+        <button class="btn-comp-export" id="gridExportBtn" onclick="exportGridSelected()" style="padding:9px 22px;font-size:10px;letter-spacing:1.5px;">⬇ EXPORT TO EXCEL</button>
+      </div>
+
       <div class="cards-grid" id="grid"></div>
       <div class="load-more-bar" id="lmBar">
         <button class="btn-more" id="lmBtn" onclick="loadMore()">LOAD MORE</button>
@@ -509,6 +524,7 @@ const SOURCES = {
 
 let currentTab = 'sale', currentLang = 'en', filtered = [], visible = 24;
 let anaComparables = [], anaOperation = 'sale';
+let gridSelected = new Map(); // id → listing object (for main grid export)
 const PAGE = 24;
 
 // ── LANGUAGE ──────────────────────────────────────────
@@ -534,6 +550,7 @@ function setTab(tab) {
   document.getElementById('listingsView').style.display = tab === 'analysis' ? 'none' : 'block';
   document.getElementById('analysisView').style.display = tab === 'analysis' ? 'block' : 'none';
   document.querySelector('.sidebar').style.display = tab === 'analysis' ? 'none' : '';
+  gridSelected.clear(); updateGridSelectBar();
   if (tab !== 'analysis') { visible = PAGE; applyFilters(); }
 }
 
@@ -746,6 +763,7 @@ function applyFilters() {
   const sMax = document.getElementById('s-max'); if (sMax) sMax.textContent = prices.length ? fmt(Math.max(...prices)) : '—';
   document.getElementById('s-src').textContent   = new Set(filtered.map(l => l.source)).size;
 
+  gridSelected.clear(); updateGridSelectBar();
   visible = PAGE;
   renderCards();
 }
@@ -766,6 +784,8 @@ function renderCards() {
   grid.innerHTML = filtered.slice(0, visible).map(listing => {
     const price = getPrice(listing, tab);
     const src   = SOURCES[listing.source] || { bg:'#f5f5f5', text:'#444', label: listing.source };
+    const isSelected = gridSelected.has(listing.id);
+    const safeId = (listing.id || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
 
     const exclusiveBadge = listing.exclusive ? '<span class="excl-badge">EXCLUSIVE</span>' : '';
     const sourceBadge    = `<span class="sbadge" style="background:${src.bg};color:${src.text}">${src.label}</span>`;
@@ -810,10 +830,14 @@ function renderCards() {
       ? `<a class="card-link" onclick="event.stopPropagation()" href="${listing.link}" target="_blank">VIEW →</a>`
       : '<span></span>';
 
-    return `<div class="card${listing.link ? ' has-link' : ''}${listing.exclusive ? ' card-excl' : ''}"
+    return `<div class="card${listing.link ? ' has-link' : ''}${listing.exclusive ? ' card-excl' : ''}${isSelected ? ' card-selected' : ''}"
       onclick="${listing.link ? `window.open('${listing.link}','_blank')` : ''}">
   <div class="card-hdr">
-    <div class="card-badges">${sourceBadge}${exclusiveBadge}</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" class="card-cb" data-id="${listing.id}" ${isSelected ? 'checked' : ''}
+        onclick="event.stopPropagation()" onchange="onCardCheck(this,'${safeId}')">
+      <div class="card-badges">${sourceBadge}${exclusiveBadge}</div>
+    </div>
     <div class="card-price">${price ? fmt(price) : '—'}</div>
   </div>
   <div class="card-name">${listing.name || listing.building || '—'}</div>
@@ -833,6 +857,148 @@ function renderCards() {
 }
 
 function loadMore() { visible += PAGE; renderCards(); }
+
+// ── MAIN GRID SELECTION & EXPORT ──────────────────────
+function onCardCheck(cb, id) {
+  const listing = filtered.find(l => l.id === id);
+  if (cb.checked) {
+    if (listing) gridSelected.set(id, listing);
+    cb.closest('.card')?.classList.add('card-selected');
+  } else {
+    gridSelected.delete(id);
+    cb.closest('.card')?.classList.remove('card-selected');
+  }
+  updateGridSelectBar();
+}
+function updateGridSelectBar() {
+  const n = gridSelected.size;
+  const bar = document.getElementById('gridSelectBar');
+  const cnt = document.getElementById('gridSelCount');
+  if (bar) bar.classList.toggle('active', n > 0);
+  if (cnt) cnt.textContent = n + (n === 1 ? ' SELECTED' : ' SELECTED');
+}
+function clearGridSelection() {
+  gridSelected.clear();
+  document.querySelectorAll('#grid .card-cb').forEach(cb => { cb.checked = false; });
+  document.querySelectorAll('#grid .card.card-selected').forEach(c => c.classList.remove('card-selected'));
+  updateGridSelectBar();
+}
+function exportGridSelected() {
+  if (!gridSelected.size) return;
+  const selected = [...gridSelected.values()];
+  const op = currentTab === 'rent' ? 'rent' : 'sale';
+  const tabLabel = op === 'rent' ? 'FOR RENT' : 'FOR SALE';
+  const dateStr = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const btn = document.getElementById('gridExportBtn');
+  if (btn) { btn.textContent = '⏳ Generating...'; btn.disabled = true; }
+
+  const fill  = rgb => ({ patternType:'solid', fgColor:{ rgb } });
+  const font  = (rgb, sz, bold, ul) => ({ name:'Arial', color:{ rgb }, sz:sz||10, bold:!!bold, underline:!!ul });
+  const align = (h, v) => ({ horizontal:h||'left', vertical:v||'center' });
+  const bord  = rgb => { const s={style:'thin',color:{rgb}}; return {top:s,bottom:s,left:s,right:s}; };
+
+  const BK='1A1A1A', WH='FFFFFF', RD='CC0000', RDLT='FFF0F0', GY='F7F7F7', BD='D8D8D8';
+
+  const aoa = [];
+  aoa.push([tabLabel + ' — Selected Listings','','','','','','','']); // row 1
+  aoa.push(['The Agency RE Panama  ·  ' + dateStr,'','','','','','','']); // row 2
+  aoa.push(['','','','','','','','']);                                      // row 3 spacer
+  aoa.push(['Name','Neighborhood','Price ($)','Size (m²)','Price / m²','Beds','Baths','Source']); // row 4
+
+  const dataStart = 5;
+  selected.forEach(l => {
+    const price = op === 'rent' ? l.price_rent : l.price_sale;
+    const m2    = parseFloat(l.const_m2) || 0;
+    const ppm2  = (price && m2) ? Math.round(price/m2) : '';
+    aoa.push([
+      l.name || l.building || '—',
+      l.neighborhood || '—',
+      price || '',
+      m2    || '',
+      ppm2,
+      l.bedrooms  || '',
+      l.bathrooms || '',
+      (SOURCES[l.source]||{label:l.source}).label,
+    ]);
+  });
+
+  const ppms = selected.map(l => {
+    const p = op==='rent'?l.price_rent:l.price_sale, m=parseFloat(l.const_m2);
+    return (p&&m) ? p/m : null;
+  }).filter(Boolean);
+  const avgPpm2 = ppms.length ? Math.round(ppms.reduce((a,b)=>a+b,0)/ppms.length) : null;
+  if (avgPpm2) {
+    aoa.push(['','','','','','','','']);
+    aoa.push(['AVERAGE PRICE / m²','','','', avgPpm2 ,'','','']);
+  }
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  ws['!merges'] = [
+    { s:{r:0,c:0}, e:{r:0,c:7} },
+    { s:{r:1,c:0}, e:{r:1,c:7} },
+    { s:{r:2,c:0}, e:{r:2,c:7} },
+  ];
+  if (avgPpm2) {
+    const avgR = dataStart - 1 + selected.length + 1;
+    ws['!merges'].push({ s:{r:avgR,c:0}, e:{r:avgR,c:3} });
+  }
+
+  ws['!cols'] = [{wch:38},{wch:18},{wch:15},{wch:11},{wch:13},{wch:7},{wch:8},{wch:20}];
+  ws['!rows'] = [{hpt:30},{hpt:16},{hpt:6},{hpt:20},...selected.map(()=>({hpt:18}))];
+
+  const enc = (r,c) => XLSX.utils.encode_cell({r,c});
+
+  // Title row
+  const r0 = ws[enc(0,0)];
+  if(r0){ r0.s = { font:font(WH,15,true), fill:fill(BK), alignment:align('left','center'), border:bord(BK) }; }
+  // Subtitle row
+  const r1 = ws[enc(1,0)];
+  if(r1){ r1.s = { font:{name:'Arial',color:{rgb:'AAAAAA'},sz:9,italic:true}, fill:fill(BK), alignment:align('left','center'), border:bord(BK) }; }
+  // Header row (index 3)
+  for(let c=0;c<8;c++){
+    const cell = ws[enc(3,c)];
+    if(cell) cell.s = { font:font(WH,10,true), fill:fill(RD), alignment:align(c===0?'left':'center','center'), border:bord(RD) };
+  }
+  // Data rows
+  selected.forEach((l, i) => {
+    const r = dataStart - 1 + i;
+    const price = op==='rent' ? l.price_rent : l.price_sale;
+    const m2    = parseFloat(l.const_m2) || 0;
+    const ppm2  = (price && m2) ? Math.round(price/m2) : null;
+    const bg    = i%2===0 ? 'FFFFFF' : GY;
+    for(let c=0;c<8;c++){
+      let cell = ws[enc(r,c)];
+      if(!cell){ ws[enc(r,c)]={v:'',t:'s'}; cell=ws[enc(r,c)]; }
+      cell.s = { font:font(BK,10,false), fill:fill(bg), alignment:align(c===0?'left':'center','center'), border:bord(BD) };
+    }
+    if(price){ const pc=ws[enc(r,2)]; if(pc){pc.z='$#,##0';pc.t='n';pc.v=price;} }
+    if(m2)   { const mc=ws[enc(r,3)]; if(mc){mc.z='#,##0'; mc.t='n';mc.v=m2;  } }
+    if(ppm2) { const sc=ws[enc(r,4)]; if(sc){sc.z='$#,##0';sc.t='n';sc.v=ppm2;} }
+    if(l.link){
+      const nc=ws[enc(r,0)];
+      if(nc){ nc.l={Target:l.link}; nc.s.font=font('0563C1',10,false,true); }
+    }
+  });
+  // Average row
+  if(avgPpm2){
+    const avgR = dataStart - 1 + selected.length + 1;
+    const lbl=ws[enc(avgR,0)];
+    if(lbl){ lbl.s={font:font(RD,10,true),fill:fill(RDLT),alignment:align('left','center'),border:bord(BD)}; }
+    const val=ws[enc(avgR,4)];
+    if(val){ val.s={font:font(RD,12,true),fill:fill(RDLT),alignment:align('center','center'),border:bord(BD)}; val.z='$#,##0';val.t='n';val.v=avgPpm2; }
+    for(const c of [1,2,3,5,6,7]){
+      let cell=ws[enc(avgR,c)]; if(!cell){ws[enc(avgR,c)]={v:'',t:'s'};cell=ws[enc(avgR,c)];}
+      cell.s = { fill:fill(RDLT), border:bord(BD) };
+    }
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, tabLabel);
+  const fname = 'Listings_' + tabLabel.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
+  XLSX.writeFile(wb, fname, { cellStyles: true });
+  if (btn) { btn.textContent = '⬇ EXPORT TO EXCEL'; btn.disabled = false; }
+}
 
 function handleSrcClick() { setTimeout(applyFilters, 0); }
 function showAllSources() {
