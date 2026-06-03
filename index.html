@@ -694,6 +694,65 @@ function closeMobileSidebar() {
   document.getElementById('sidebarOverlay')?.classList.remove('mob-open');
 }
 
+// ── NEIGHBORHOOD NORMALIZATION ────────────────────────
+// Applied client-side so existing data.js is fixed immediately (no rescrape needed).
+// Keys are lowercase + no accents (like utils.py normalize_text). Values = canonical display name.
+const HOOD_NORM = {
+  // Accent / capitalisation variants
+  'altos del maria':          'Altos del María',
+  'ancon':                    'Ancón',
+  'ancon panama':             'Ancón',
+  'anton':                    'Antón',
+  'arraijan':                 'Arraiján',
+  'baru':                     'Barú',
+  'boqueron':                 'Boquerón',
+  'calle 50':                 'Calle 50',
+  'cocle':                    'Coclé',
+  'costa del este':           'Costa del Este',
+  'curundu':                  'Curundú',
+  'farallon':                 'Farallón',
+  'juan diaz':                'Juan Díaz',
+  'nata':                     'Natá',
+  'panama oeste':             'Panamá Oeste',
+  'paraiso':                  'Paraíso',
+  'pedasi':                   'Pedasí',
+  'penonome':                 'Penonomé',
+  'pocri':                    'Pocrí',
+  'punta barco':              'Punta Barco',
+  'rio hato':                 'Río Hato',
+  'tole':                     'Tolé',
+  'via espana':               'Vía España',
+  'volcan':                   'Volcán',
+  // Same place, different name
+  'ocean reef islands':       'Ocean Reef',
+  'paitilla':                 'Punta Paitilla',
+  'casco viejo, san felipe':  'Casco Viejo',
+  'casco antiguo':            'Casco Viejo',
+  'altos del golf':           'Altos de Golf',
+  'bethania':                 'Betania',
+  'portobello':               'Portobelo',
+  'pearl islands':            'Pearl Island',
+  'santa maria panama':       'Santa Maria',
+  'el valle de anton':        'El Valle',
+  'el valle, panama':         'El Valle',
+  'amador, cause way':        'Amador Causeway',
+  // Standard
+  'santa maria':              'Santa Maria',
+  'punta pacifica':           'Punta Pacifica',
+  'panama pacifico':          'Panama Pacifico',
+};
+
+function normalizeHood(h) {
+  if (!h) return '';
+  // Collapse multiple spaces, strip trailing punct
+  const clean = h.replace(/\s+/g, ' ').replace(/[!?,;:]+$/, '').trim();
+  // Build lookup key: lowercase + strip accents
+  const key = clean.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, ' ').trim();
+  return HOOD_NORM[key] || clean;
+}
+
 // ── INIT ──────────────────────────────────────────────
 function init() {
   try {
@@ -701,6 +760,9 @@ function init() {
     ALL_DATA.forEach(l => {
       if (l.name && l.name.toLowerCase().includes('diana tower')) l.neighborhood = 'Obarrio';
     });
+
+    // Normalize all neighborhood names (fixes accents, case, aliases)
+    ALL_DATA.forEach(l => { l.neighborhood = normalizeHood(l.neighborhood); });
     // Normalize E24 bathroom format ("35" → "3.5", "25" → "2.5", etc.)
     ALL_DATA.forEach(l => {
       if (l.source === 'E24' && l.bathrooms) {
