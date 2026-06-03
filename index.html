@@ -190,6 +190,20 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
 .comp-sel-count{font-family:var(--font-sans);font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);}
 .btn-ana-reset{padding:12px 14px;background:transparent;border:1px solid var(--border);border-radius:var(--radius);font-size:16px;cursor:pointer;color:var(--text-muted);transition:all .18s;white-space:nowrap;}.btn-ana-reset:hover{border-color:var(--red);color:var(--red);}
 
+/* ── FEATURE TOGGLES (sidebar) ── */
+.feat-toggles{display:flex;flex-wrap:wrap;gap:6px;}
+.feat-toggle{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border:1px solid var(--border);border-radius:20px;font-family:var(--font-sans);font-size:10px;font-weight:600;letter-spacing:.3px;cursor:pointer;color:var(--text-muted);background:var(--white);transition:all .18s;user-select:none;white-space:nowrap;}
+.feat-toggle:hover{border-color:var(--red);color:var(--red);}
+.feat-toggle.active{background:var(--red);color:var(--white);border-color:var(--red);}
+/* Feature badges on cards */
+.feat-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px;}
+.feat-badge{font-family:var(--font-sans);font-size:8.5px;font-weight:700;letter-spacing:.5px;padding:2px 7px;border-radius:3px;text-transform:uppercase;white-space:nowrap;}
+.feat-furnished{background:#f0fdf4;color:#15803d;}
+.feat-ocean{background:#eff6ff;color:#1d4ed8;}
+.feat-city{background:#f5f3ff;color:#6d28d9;}
+/* Price/m² sub-label on card */
+.card-ppm2{font-family:var(--font-sans);font-size:10px;color:var(--text-muted);font-weight:500;letter-spacing:.3px;margin-top:1px;}
+
 /* ── GRID SELECTION BAR ── */
 .grid-select-bar{display:none;background:var(--white);border:1px solid var(--red);border-radius:var(--radius);padding:10px 16px;margin-bottom:14px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;box-shadow:0 2px 12px rgba(204,0,0,0.10);}
 .grid-select-bar.active{display:flex;}
@@ -383,6 +397,14 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
       </select>
     </div>
     <div class="fg">
+      <label data-en="FEATURES" data-es="CARACTERÍSTICAS">FEATURES</label>
+      <div class="feat-toggles">
+        <div class="feat-toggle" id="fFurnished" onclick="toggleFeat('fFurnished')" data-en="🛋 Furnished" data-es="🛋 Amueblado">🛋 Furnished</div>
+        <div class="feat-toggle" id="fOceanView" onclick="toggleFeat('fOceanView')" data-en="🌊 Ocean View" data-es="🌊 Vista al Mar">🌊 Ocean View</div>
+        <div class="feat-toggle" id="fCityView"  onclick="toggleFeat('fCityView')"  data-en="🏙 City View"  data-es="🏙 Vista Ciudad">🏙 City View</div>
+      </div>
+    </div>
+    <div class="fg">
       <label data-en="SOURCE" data-es="FUENTE">SOURCE</label>
       <div class="src-filters" id="srcFilters"></div>
     </div>
@@ -399,8 +421,9 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
         <select class="sort-sel" id="sortSel" onchange="applyFilters()">
           <option value="price_asc" data-en="Price ↑ Low to High" data-es="Precio ↑ Menor a Mayor">Price ↑ Low to High</option>
           <option value="price_desc" data-en="Price ↓ High to Low" data-es="Precio ↓ Mayor a Menor">Price ↓ High to Low</option>
+          <option value="ppm2_asc" data-en="$/m² ↑ Best Value" data-es="$/m² ↑ Mejor Valor">$/m² ↑ Best Value</option>
+          <option value="ppm2_desc" data-en="$/m² ↓ Highest" data-es="$/m² ↓ Mayor">$/m² ↓ Highest</option>
           <option value="m2_desc" data-en="Size ↓ Largest first" data-es="Tamaño ↓ Mayor primero">Size ↓ Largest first</option>
-          <option value="newest" data-en="Newest first" data-es="Más reciente">Newest first</option>
         </select>
         <span class="res-count" id="resCnt"></span>
       </div>
@@ -630,6 +653,14 @@ function init() {
       }
     });
 
+    // Detect features (furnished, ocean view, city view) from listing titles
+    ALL_DATA.forEach(l => {
+      const txt = [l.name, l.building, l.address].filter(Boolean).join(' ').toLowerCase();
+      l._furnished = /furnished|amueblad[ao]|amoblad[ao]|turn.?key|con muebles|full furniture|fully furnished/.test(txt);
+      l._oceanView = /ocean.?view|sea.?view|vista.?al.?mar|vista.?mar|frente.?al.?mar|oceanfront|beach.?front|beachfront|frente.?playa|vista.?oce/.test(txt);
+      l._cityView  = /city.?view|vista.?ciudad|vista.?a.?la.?ciudad|panoramic.?view|vista.?panoram/.test(txt);
+    });
+
     // Build neighborhood list from all unique neighborhoods
     const hoodSet = new Set(ALL_DATA.map(l => l.neighborhood).filter(Boolean));
     allHoods = [...hoodSet].sort();
@@ -698,6 +729,9 @@ function applyFilters() {
   const typeFilter = (document.getElementById('fType')?.value || '').toLowerCase();
   const activeSources = new Set([...document.querySelectorAll('#srcFilters input[type=checkbox]:checked')].map(c => c.value));
   const sortMode = document.getElementById('sortSel')?.value || 'price_asc';
+  const wantFurnished = document.getElementById('fFurnished')?.classList.contains('active');
+  const wantOceanView = document.getElementById('fOceanView')?.classList.contains('active');
+  const wantCityView  = document.getElementById('fCityView')?.classList.contains('active');
 
   filtered = ALL_DATA.filter(listing => {
     // Operation (sale/rent)
@@ -733,6 +767,10 @@ function applyFilters() {
     if (hasCb && !activeSources.has(listing.source)) return false;
     // Neighborhood multi-select
     if (selectedHoods.size > 0 && !selectedHoods.has(listing.neighborhood)) return false;
+    // Feature toggles
+    if (wantFurnished && !listing._furnished) return false;
+    if (wantOceanView && !listing._oceanView) return false;
+    if (wantCityView  && !listing._cityView)  return false;
     // Text search
     if (query) {
       const haystack = [listing.name, listing.building, listing.address, listing.neighborhood, listing.district, listing.id]
@@ -752,6 +790,12 @@ function applyFilters() {
     if (sortMode === 'price_asc')  return (pa || Infinity) - (pb || Infinity);
     if (sortMode === 'price_desc') return (pb || 0) - (pa || 0);
     if (sortMode === 'm2_desc')    return (parseFloat(b.const_m2) || 0) - (parseFloat(a.const_m2) || 0);
+    if (sortMode === 'ppm2_asc' || sortMode === 'ppm2_desc') {
+      const ma = parseFloat(a.const_m2), mb = parseFloat(b.const_m2);
+      const ppa = (pa && ma) ? pa/ma : null, ppb = (pb && mb) ? pb/mb : null;
+      if (sortMode === 'ppm2_asc')  return (ppa || Infinity) - (ppb || Infinity);
+      if (sortMode === 'ppm2_desc') return (ppb || 0) - (ppa || 0);
+    }
     return 0;
   });
 
@@ -798,12 +842,18 @@ function renderCards() {
     }
 
     const m2value = parseFloat(listing.const_m2);
+    const ppm2 = (price && m2value) ? Math.round(price / m2value) : null;
     const specs = [
       listing.bedrooms ? `<span class="spec">🛏 ${listing.bedrooms}</span>` : '',
       listing.bathrooms ? `<span class="spec">🚿 ${listing.bathrooms}</span>` : '',
       m2value ? `<span class="spec">${m2value < 10 ? m2value.toFixed(1) : Math.round(m2value)} m²</span>` : '',
       listing.parking ? `<span class="spec">🅿 ${listing.parking}</span>` : '',
     ].join('');
+    const featBadges = [
+      listing._furnished ? '<span class="feat-badge feat-furnished">🛋 Furnished</span>' : '',
+      listing._oceanView ? '<span class="feat-badge feat-ocean">🌊 Ocean View</span>' : '',
+      listing._cityView  ? '<span class="feat-badge feat-city">🏙 City View</span>'  : '',
+    ].filter(Boolean).join('');
 
     const location = [listing.neighborhood, listing.district].filter(Boolean).join(', ');
 
@@ -838,12 +888,16 @@ function renderCards() {
         onclick="event.stopPropagation()" onchange="onCardCheck(this,'${safeId}')">
       <div class="card-badges">${sourceBadge}${exclusiveBadge}</div>
     </div>
-    <div class="card-price">${price ? fmt(price) : '—'}</div>
+    <div style="text-align:right">
+      <div class="card-price">${price ? fmt(price) : '—'}</div>
+      ${ppm2 ? `<div class="card-ppm2">$${ppm2.toLocaleString('en-US')}/m²</div>` : ''}
+    </div>
   </div>
   <div class="card-name">${listing.name || listing.building || '—'}</div>
   ${location ? `<div class="card-loc">📍 ${location}</div>` : ''}
   <div class="card-body">
     <div class="card-specs">${specs}</div>
+    ${featBadges ? `<div class="feat-badges">${featBadges}</div>` : ''}
     ${altSection}
   </div>
   <div class="card-ftr">${mlsNumber || '<span></span>'}${viewLink}</div>
@@ -1000,6 +1054,7 @@ function exportGridSelected() {
   if (btn) { btn.textContent = '⬇ EXPORT TO EXCEL'; btn.disabled = false; }
 }
 
+function toggleFeat(id) { document.getElementById(id)?.classList.toggle('active'); applyFilters(); }
 function handleSrcClick() { setTimeout(applyFilters, 0); }
 function showAllSources() {
   document.querySelectorAll('#srcFilters input[type=checkbox]').forEach(c => c.checked = true);
@@ -1012,6 +1067,7 @@ function resetFilters() {
   const ft = document.getElementById('fType'); if (ft) ft.value = '';
   document.querySelectorAll('#srcFilters input[type=checkbox]').forEach(c => c.checked = true);
   selectedHoods.clear(); renderHoodTags(); filterHoodOpts();
+  ['fFurnished','fOceanView','fCityView'].forEach(id => document.getElementById(id)?.classList.remove('active'));
   ['searchIn', 'sbSearch'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   applyFilters();
 }
