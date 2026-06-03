@@ -226,11 +226,21 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
 .dom-old{background:#fff7ed;color:#c2410c;}
 
 /* ── MAP VIEW ── */
-#mapView{display:none;padding:20px 26px;}
-#mapContainer{height:calc(100vh - 220px);min-height:500px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);}
-.map-legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center;}
-.map-legend-item{display:flex;align-items:center;gap:5px;font-family:var(--font-sans);font-size:10px;color:var(--text-muted);}
-.map-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+#mapView{display:none;padding:16px 22px;flex:1;min-width:0;}
+#mapContainer{height:calc(100vh - 200px);min-height:480px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);}
+.map-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;}
+.map-tab-toggle{display:flex;background:var(--cream);border-radius:4px;overflow:hidden;border:1px solid var(--border);}
+.map-tab-btn{padding:6px 14px;font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border:none;background:transparent;color:var(--text-muted);transition:all .18s;}
+.map-tab-btn.active{background:var(--red);color:var(--white);}
+.map-info{font-family:var(--font-sans);font-size:10.5px;color:var(--text-muted);margin-left:auto;}
+.map-info strong{color:var(--black);}
+/* Leaflet popup override */
+.leaflet-popup-content{font-family:Inter,sans-serif;font-size:12px;margin:10px 14px;}
+.map-popup-price{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:#000;margin-bottom:4px;}
+.map-popup-name{font-size:11px;font-weight:500;color:#1a1a1a;margin-bottom:3px;line-height:1.3;}
+.map-popup-specs{font-size:10px;color:#888;margin-bottom:8px;}
+.map-popup-link{display:inline-block;padding:4px 12px;background:#ed1c24;color:#fff;border-radius:4px;font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;text-decoration:none;}
+.map-popup-link:hover{background:#cc0000;}
 
 /* ── SHARE ANALYSIS BUTTON ── */
 .btn-share{padding:12px 14px;background:transparent;border:1px solid var(--border);border-radius:var(--radius);font-size:14px;cursor:pointer;color:var(--text-muted);transition:all .18s;white-space:nowrap;}.btn-share:hover{border-color:var(--red);color:var(--red);}
@@ -476,7 +486,13 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
 
     <!-- Map View -->
     <div id="mapView">
-      <div class="map-legend" id="mapLegend"></div>
+      <div class="map-toolbar">
+        <div class="map-tab-toggle">
+          <button class="map-tab-btn active" id="mapBtnSale" onclick="setMapTab('sale')">FOR SALE</button>
+          <button class="map-tab-btn" id="mapBtnRent" onclick="setMapTab('rent')">FOR RENT</button>
+        </div>
+        <span class="map-info" id="mapInfo">Apply filters in the sidebar, then switch to this tab</span>
+      </div>
       <div id="mapContainer"></div>
     </div>
 
@@ -585,7 +601,7 @@ const SOURCES = {
   'PUNTAPAC':  { label:'Punta Pacifica',   color:'#0e7490', bg:'#f0f9ff', text:'#0369a1' },
 };
 
-let currentTab = 'sale', currentLang = 'en', filtered = [], visible = 24;
+let currentTab = 'sale', listingTab = 'sale', currentLang = 'en', filtered = [], visible = 24;
 let anaComparables = [], anaOperation = 'sale';
 let gridSelected = new Map(); // id → listing object (for main grid export)
 const PAGE = 24;
@@ -608,15 +624,30 @@ function setLang(lang) {
 // ── TABS ──────────────────────────────────────────────
 function setTab(tab) {
   currentTab = tab;
+  // Remember last listing tab (sale/rent) so map inherits it
+  if (tab === 'sale' || tab === 'rent') listingTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab)?.classList.add('active');
   document.getElementById('listingsView').style.display = (tab === 'analysis' || tab === 'map') ? 'none' : 'block';
   document.getElementById('analysisView').style.display = tab === 'analysis' ? 'block' : 'none';
   document.getElementById('mapView').style.display      = tab === 'map' ? 'block' : 'none';
-  document.querySelector('.sidebar').style.display = (tab === 'analysis' || tab === 'map') ? 'none' : '';
+  // Sidebar: visible for listings + map, hidden only for analysis
+  document.querySelector('.sidebar').style.display = tab === 'analysis' ? 'none' : '';
   gridSelected.clear(); updateGridSelectBar();
-  if (tab === 'map') { renderMap(); }
-  else if (tab !== 'analysis') { visible = PAGE; applyFilters(); }
+  if (tab === 'map') {
+    // Sync map sale/rent buttons with last listing tab
+    setMapTab(listingTab, false);
+  } else if (tab !== 'analysis') {
+    visible = PAGE; applyFilters();
+  }
+}
+
+function setMapTab(tab, refilter = true) {
+  listingTab = tab;
+  document.getElementById('mapBtnSale')?.classList.toggle('active', tab === 'sale');
+  document.getElementById('mapBtnRent')?.classList.toggle('active', tab === 'rent');
+  if (refilter) applyFilters();
+  else renderMap();
 }
 
 // ── HELPERS ───────────────────────────────────────────
@@ -862,7 +893,8 @@ function syncSearch(val) {
 }
 
 function applyFilters() {
-  const tab = currentTab === 'analysis' ? 'sale' : currentTab;
+  // On map/analysis tabs, use listingTab (last sale/rent tab the user was on)
+  const tab = (currentTab === 'analysis' || currentTab === 'map') ? listingTab : currentTab;
   const query = (document.getElementById('searchIn')?.value || document.getElementById('sbSearch')?.value || '').toLowerCase().trim();
   const priceMin = parseFloat(document.getElementById('fPMin')?.value) || 0;
   const priceMax = parseFloat(document.getElementById('fPMax')?.value) || Infinity;
@@ -964,13 +996,17 @@ function applyFilters() {
   document.getElementById('s-src').textContent   = new Set(filtered.map(l => l.source)).size;
 
   gridSelected.clear(); updateGridSelectBar();
-  visible = PAGE;
-  renderCards();
+  if (currentTab === 'map') {
+    renderMap();
+  } else {
+    visible = PAGE;
+    renderCards();
+  }
 }
 
 // ── RENDER CARDS ──────────────────────────────────────
 function renderCards() {
-  const tab  = currentTab === 'analysis' ? 'sale' : currentTab;
+  const tab  = (currentTab === 'analysis' || currentTab === 'map') ? listingTab : currentTab;
   const grid = document.getElementById('grid');
   if (!grid) return;
 
@@ -1627,7 +1663,7 @@ function exportComps() {
 }
 
 // ── MAP VIEW ──────────────────────────────────────────
-// Neighborhood centroids for Panama City (lat, lng)
+// Neighborhood centroids (lat, lng) — used as base position for markers
 const HOOD_COORDS = {
   'Punta Pacifica':    [8.9900, -79.5100],
   'Punta Paitilla':   [8.9920, -79.5080],
@@ -1643,26 +1679,61 @@ const HOOD_COORDS = {
   'Albrook':          [8.9800, -79.5450],
   'Clayton':          [8.9850, -79.5600],
   'Amador':           [8.9250, -79.5380],
+  'Amador Causeway':  [8.9280, -79.5320],
   'Ocean Reef':       [8.9100, -79.5200],
+  'Coco del Mar':     [9.0080, -79.4900],
+  'Hato Pintado':     [9.0120, -79.5200],
+  'Carrasquilla':     [9.0160, -79.5000],
+  'Edison Park':      [9.0200, -79.5100],
+  'Condado del Rey':  [9.0400, -79.5000],
+  'Altos de Golf':    [9.0250, -79.5000],
+  'Las Cumbres':      [9.0600, -79.5000],
+  'Brisas del Golf':  [9.0250, -79.5150],
+  'Tumba Muerto':     [9.0200, -79.5300],
+  'Chanis':           [9.0150, -79.4800],
+  'Panama Pacifico':  [8.9100, -79.6000],
+  'Costa Sur':        [8.9600, -79.5600],
+  'Howard':           [8.9500, -79.5700],
+  'Quarry Heights':   [8.9750, -79.5450],
   'Buenaventura':     [8.3800, -80.1400],
   'Coronado':         [8.5400, -79.9700],
+  'Playa Coronado':   [8.5300, -79.9800],
+  'Nueva Gorgona':    [8.5700, -79.9500],
+  'Playa Gorgona':    [8.5500, -79.9600],
+  'Chame':            [8.5900, -79.9400],
+  'Punta Chame':      [8.5800, -79.9700],
+  'San Carlos':       [8.4700, -80.0100],
   'Boquete':          [8.7800, -82.4400],
+  'Alto Boquete':     [8.7900, -82.4300],
   'Bocas del Toro':   [9.3400, -82.2400],
   'Santa Clara':      [8.4400, -80.0600],
   'Playa Blanca':     [8.4800, -80.0900],
-  'Panama Pacifico':  [8.9100, -79.6000],
-  'Quarry Heights':   [8.9750, -79.5450],
+  'El Farallón':      [8.3900, -80.1300],
+  'El Valle':         [8.6100, -80.1200],
   'Pedasi':           [7.5300, -80.0200],
   'David':            [8.4300, -82.4300],
-  'Chitre':           [7.9600, -80.4300],
-  'Anton':            [8.3900, -80.2700],
+  'Penonomé':         [8.5200, -80.3500],
+  'Chitré':           [7.9600, -80.4300],
+  'Antón':            [8.3900, -80.2700],
+  'Río Hato':         [8.3700, -80.1700],
+  'Pearl Island':     [8.6700, -79.0400],
+  'Taboga':           [8.7900, -79.5600],
 };
 
 let _map = null, _mapMarkers = [];
 
+// Deterministic jitter so same listing always shows at same spot
+function _jitter(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = Math.imul(31, h) + id.charCodeAt(i) | 0;
+  const lat = ((h & 0xFFFF) / 0xFFFF - 0.5) * 0.006;   // ±~330m
+  const lng = (((h >>> 16) & 0xFFFF) / 0xFFFF - 0.5) * 0.008;
+  return [lat, lng];
+}
+
 function renderMap() {
   const container = document.getElementById('mapContainer');
-  if (!container) return;
+  if (!container || typeof L === 'undefined') return;
 
   // Init map once
   if (!_map) {
@@ -1677,92 +1748,131 @@ function renderMap() {
   _mapMarkers.forEach(m => m.remove());
   _mapMarkers = [];
 
-  // Group active listings (sale tab) by neighborhood
-  const tab = 'sale'; // map always shows for-sale
-  const byHood = {};
-  ALL_DATA.forEach(l => {
-    if (!l.operation || !l.operation.includes(tab)) return;
-    const price = l.price_sale;
-    const hood  = l.neighborhood;
-    const coords = HOOD_COORDS[hood];
-    if (!coords) return;
-    if (!byHood[hood]) byHood[hood] = { coords, listings: [], prices: [] };
-    byHood[hood].listings.push(l);
-    if (price) byHood[hood].prices.push(price);
+  const tab = listingTab; // sale or rent
+
+  // Use filtered array (already matches all sidebar filters + tab)
+  // If filtered is empty or not yet computed, fall back to empty
+  const source = filtered.length > 0 ? filtered : [];
+
+  // Separate listings with known coords from those without
+  const withCoords = [], withoutCoords = [];
+  source.forEach(l => {
+    const coords = HOOD_COORDS[l.neighborhood];
+    if (coords) withCoords.push(l);
+    else withoutCoords.push(l);
   });
 
-  // Build legend
-  const legend = document.getElementById('mapLegend');
-  if (legend) legend.innerHTML = `
-    <span style="font-family:var(--font-sans);font-size:9.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);">SALE LISTINGS BY NEIGHBORHOOD</span>
-    <span style="margin-left:auto;font-family:var(--font-sans);font-size:9.5px;color:var(--text-muted);">${Object.keys(byHood).length} neighborhoods · ${Object.values(byHood).reduce((a,b)=>a+b.listings.length,0)} listings</span>`;
-
-  // Add markers
-  Object.entries(byHood).forEach(([hood, data]) => {
-    const { coords, listings, prices } = data;
-    const avg = prices.length ? Math.round(prices.reduce((a,b)=>a+b,0)/prices.length) : null;
-    const n   = listings.length;
-
-    // Circle size by listing count (min 18, max 50)
-    const r = Math.min(50, Math.max(18, 18 + Math.sqrt(n) * 3));
-
-    // Color by avg price: green=cheap, orange=mid, red=expensive
-    let color = '#16a34a';
-    if (avg > 500000)  color = '#d97706';
-    if (avg > 1000000) color = '#dc2626';
-
-    const marker = L.circleMarker(coords, {
-      radius: r,
-      fillColor: color,
-      color: '#fff',
-      weight: 2,
-      opacity: 1,
-      fillOpacity: 0.75,
-    });
-
-    const topListings = listings.slice(0, 5).map(l => {
-      const p = l.price_sale ? fmt(l.price_sale) : '—';
-      const sz = l.const_m2 ? Math.round(parseFloat(l.const_m2)) + ' m²' : '';
-      const bd = l.bedrooms ? l.bedrooms + 'bd' : '';
-      const info = [bd, sz].filter(Boolean).join(' · ');
-      return `<div style="padding:3px 0;border-bottom:1px solid #f0f0f0;font-size:11px">
-        <strong>${p}</strong>${info ? ` <span style="color:#888;font-size:10px">${info}</span>` : ''}
-      </div>`;
-    }).join('');
-
-    marker.bindPopup(`
-      <div style="font-family:Inter,sans-serif;min-width:180px;">
-        <div style="font-weight:700;font-size:13px;margin-bottom:6px">📍 ${hood}</div>
-        <div style="font-size:11px;color:#666;margin-bottom:8px">${n} listing${n!==1?'s':''} · Avg ${avg ? fmt(avg) : '—'}</div>
-        ${topListings}
-        ${n > 5 ? `<div style="font-size:10px;color:#888;margin-top:4px">+${n-5} more</div>` : ''}
-      </div>
-    `, { maxWidth: 240 });
-
-    // Label (number badge) via a divIcon
-    const label = L.divIcon({
-      className: '',
-      html: `<div style="width:${r*2}px;height:${r*2}px;border-radius:50%;background:${color};border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${n>99?9:11}px;font-family:Inter,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,0.3)">${n}</div>`,
-      iconSize: [r*2, r*2],
-      iconAnchor: [r, r],
-    });
-    const iconMarker = L.marker(coords, { icon: label });
-    iconMarker.bindPopup(marker._popup);
-    iconMarker.on('click', () => iconMarker.openPopup());
-    iconMarker.addTo(_map);
-    _mapMarkers.push(iconMarker);
-  });
-
-  // Fit bounds to markers if any
-  if (_mapMarkers.length > 0 && _map) {
-    try {
-      const group = L.featureGroup(_mapMarkers);
-      _map.fitBounds(group.getBounds().pad(0.15));
-    } catch(e) {}
+  // Update info bar
+  const infoEl = document.getElementById('mapInfo');
+  if (infoEl) {
+    const hidden = withoutCoords.length;
+    infoEl.innerHTML = `<strong>${withCoords.length}</strong> listings on map` +
+      (hidden > 0 ? ` · <span style="color:#c2410c">${hidden} without location</span>` : '');
   }
 
-  // Invalidate size (in case tab was hidden when map initialized)
-  setTimeout(() => _map && _map.invalidateSize(), 100);
+  // ── Mode A: ≤300 filtered listings → individual markers ──────────────
+  if (withCoords.length <= 300) {
+    withCoords.forEach(l => {
+      const base  = HOOD_COORDS[l.neighborhood];
+      const jit   = _jitter(String(l.id));
+      const pos   = [base[0] + jit[0], base[1] + jit[1]];
+      const price = getPrice(l, tab);
+      const src   = SOURCES[l.source] || { color:'#888', bg:'#eee', text:'#444', label: l.source };
+
+      // Marker icon: colored circle with price label
+      const label = price ? fmt(price) : src.label.slice(0,3);
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="
+          background:${src.color};border:2px solid #fff;
+          border-radius:20px;padding:3px 8px;
+          color:#fff;font-family:Inter,sans-serif;font-size:9px;font-weight:700;
+          white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.35);
+          cursor:pointer;letter-spacing:.3px;">
+          ${label}
+        </div>`,
+        iconAnchor: [0, 10],
+      });
+
+      const marker = L.marker(pos, { icon });
+
+      // Build popup
+      const specs = [
+        l.bedrooms  ? l.bedrooms + ' bd'  : null,
+        l.bathrooms ? l.bathrooms + ' ba' : null,
+        l.const_m2  ? Math.round(parseFloat(l.const_m2)) + ' m²' : null,
+      ].filter(Boolean).join(' · ');
+
+      marker.bindPopup(`
+        <div class="leaflet-popup-content" style="min-width:200px;margin:10px 14px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:${src.text};background:${src.bg};padding:2px 7px;border-radius:3px;display:inline-block;margin-bottom:6px;text-transform:uppercase">${src.label}</div>
+          <div class="map-popup-price">${price ? fmtFull(price) : '—'}</div>
+          <div class="map-popup-name">${l.name || l.building || '—'}</div>
+          <div class="map-popup-specs">📍 ${l.neighborhood || ''}${specs ? ' · ' + specs : ''}</div>
+          ${l.link ? `<a class="map-popup-link" href="${l.link}" target="_blank" rel="noopener">VIEW LISTING →</a>` : ''}
+        </div>`, { maxWidth: 260, className: 'reva-popup' });
+
+      marker.addTo(_map);
+      _mapMarkers.push(marker);
+    });
+
+  // ── Mode B: >300 listings → neighborhood bubble groups ───────────────
+  } else {
+    const byHood = {};
+    withCoords.forEach(l => {
+      const hood = l.neighborhood;
+      if (!byHood[hood]) byHood[hood] = { coords: HOOD_COORDS[hood], listings: [], prices: [] };
+      byHood[hood].listings.push(l);
+      const p = getPrice(l, tab);
+      if (p) byHood[hood].prices.push(p);
+    });
+
+    Object.entries(byHood).forEach(([hood, data]) => {
+      const { coords, listings, prices } = data;
+      const avg = prices.length ? Math.round(prices.reduce((a,b)=>a+b,0)/prices.length) : null;
+      const n = listings.length;
+      const r = Math.min(44, Math.max(18, 18 + Math.sqrt(n) * 3));
+      let color = '#16a34a';
+      if (avg > 500000)  color = '#d97706';
+      if (avg > 1000000) color = '#dc2626';
+
+      const topItems = listings.slice(0, 5).map(l => {
+        const p = getPrice(l, tab);
+        const sz = l.const_m2 ? Math.round(parseFloat(l.const_m2)) + ' m²' : '';
+        const bd = l.bedrooms ? l.bedrooms + 'bd' : '';
+        return `<div style="padding:3px 0;border-bottom:1px solid #f0f0f0;font-size:11px">
+          <strong>${p ? fmt(p) : '—'}</strong>${[bd,sz].filter(Boolean).length ? ' <span style="color:#888;font-size:10px">'+[bd,sz].filter(Boolean).join(' · ')+'</span>' : ''}
+        </div>`;
+      }).join('');
+
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="width:${r*2}px;height:${r*2}px;border-radius:50%;background:${color};border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${n>99?9:11}px;font-family:Inter,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,0.3)">${n}</div>`,
+        iconSize: [r*2, r*2], iconAnchor: [r, r],
+      });
+      const marker = L.marker(coords, { icon });
+      marker.bindPopup(`
+        <div style="font-family:Inter,sans-serif;min-width:190px;">
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px">📍 ${hood}</div>
+          <div style="font-size:10px;color:#666;margin-bottom:8px">${n} listing${n!==1?'s':''} · Avg ${avg?fmt(avg):'—'}</div>
+          ${topItems}
+          ${n>5?`<div style="font-size:10px;color:#888;margin-top:4px">+${n-5} more</div>`:''}
+        </div>`, { maxWidth: 240 });
+      marker.addTo(_map);
+      _mapMarkers.push(marker);
+    });
+  }
+
+  // Fit bounds to visible markers
+  if (_mapMarkers.length > 0) {
+    try {
+      _map.fitBounds(L.featureGroup(_mapMarkers).getBounds().pad(0.2));
+    } catch(e) { _map.setView([9.0, -79.51], 12); }
+  } else if (infoEl) {
+    infoEl.innerHTML = '<span style="color:#c2410c">No listings with known location match your filters</span>';
+  }
+
+  setTimeout(() => _map && _map.invalidateSize(), 120);
 }
 
 // ── INIT ──────────────────────────────────────────────
