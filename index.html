@@ -581,7 +581,7 @@ function setTab(tab) {
 function fmt(n) {
   if (!n) return '—';
   if (n >= 1e6) return '$' + (n / 1e6).toFixed(2).replace(/\.?0+$/, '') + ' M';
-  if (n >= 1e3) return '$' + Math.round(n / 1000) + 'K';
+  if (n >= 1e3) return '$' + (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
   return '$' + n.toLocaleString('en-US');
 }
 function fmtFull(n) { return n ? '$' + n.toLocaleString('en-US') : '—'; }
@@ -650,6 +650,21 @@ function init() {
       if (l.source === 'E24' && l.bathrooms) {
         const b = parseFloat(l.bathrooms);
         if (b > 10) l.bathrooms = String(b / 10);
+      }
+    });
+
+    // Extract price from title for listings missing a price (common on E24)
+    ALL_DATA.forEach(l => {
+      if (!l.price_sale && !l.price_rent && l.name) {
+        // Match patterns like $1,200 or $450,000 or $1200 in the title
+        const m = l.name.match(/\$\s*([\d]{1,3}(?:[,.][\d]{3})*(?:\.\d+)?)/);
+        if (m) {
+          const val = parseFloat(m[1].replace(/,/g, ''));
+          if (val >= 100) { // ignore tiny values
+            if (l.operation?.includes('rent')) l.price_rent = val;
+            else l.price_sale = val;
+          }
+        }
       }
     });
 
