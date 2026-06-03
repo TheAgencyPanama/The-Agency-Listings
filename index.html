@@ -210,6 +210,33 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
 .card-cb{width:15px;height:15px;accent-color:var(--red);cursor:pointer;flex-shrink:0;}
 .card.card-selected{border-color:var(--red)!important;background:#fff8f8;}
 
+/* ── CARD PHOTO ── */
+.card-img-wrap{width:100%;height:160px;overflow:hidden;background:var(--cream);flex-shrink:0;}
+.card-img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s;}
+.card:hover .card-img{transform:scale(1.04);}
+.card-img-wrap.no-img{display:none;}
+
+/* ── PRICE DROP BADGE ── */
+.price-drop{font-family:var(--font-sans);font-size:8.5px;font-weight:700;letter-spacing:.3px;padding:2px 7px;border-radius:3px;background:#fef2f2;color:#dc2626;white-space:nowrap;display:flex;align-items:center;gap:3px;}
+
+/* ── DAYS ON MARKET BADGE ── */
+.dom-badge{font-family:var(--font-sans);font-size:8.5px;font-weight:600;letter-spacing:.3px;padding:2px 7px;border-radius:3px;white-space:nowrap;}
+.dom-new{background:#f0fdf4;color:#15803d;}
+.dom-mid{background:var(--cream);color:var(--text-muted);}
+.dom-old{background:#fff7ed;color:#c2410c;}
+
+/* ── MAP VIEW ── */
+#mapView{display:none;padding:20px 26px;}
+#mapContainer{height:calc(100vh - 220px);min-height:500px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);}
+.map-legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center;}
+.map-legend-item{display:flex;align-items:center;gap:5px;font-family:var(--font-sans);font-size:10px;color:var(--text-muted);}
+.map-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+
+/* ── SHARE ANALYSIS BUTTON ── */
+.btn-share{padding:12px 14px;background:transparent;border:1px solid var(--border);border-radius:var(--radius);font-size:14px;cursor:pointer;color:var(--text-muted);transition:all .18s;white-space:nowrap;}.btn-share:hover{border-color:var(--red);color:var(--red);}
+.share-toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--black);color:var(--white);padding:10px 20px;border-radius:6px;font-family:var(--font-sans);font-size:12px;font-weight:600;letter-spacing:.5px;z-index:9000;opacity:0;transition:opacity .3s;pointer-events:none;}
+.share-toast.show{opacity:1;}
+
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:var(--cream);}
@@ -250,6 +277,8 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
@@ -327,6 +356,7 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
       <button class="tab-btn active" id="tab-sale" onclick="setTab('sale')" data-en="FOR SALE" data-es="EN VENTA">FOR SALE</button>
       <button class="tab-btn" id="tab-rent" onclick="setTab('rent')" data-en="FOR RENT" data-es="EN ALQUILER">FOR RENT</button>
       <button class="tab-btn" id="tab-analysis" onclick="setTab('analysis')" data-en="⚖ PRICE ANALYSIS" data-es="⚖ ANÁLISIS">⚖ PRICE ANALYSIS</button>
+      <button class="tab-btn" id="tab-map" onclick="setTab('map')" data-en="📍 MAP" data-es="📍 MAPA">📍 MAP</button>
       <span class="upd-txt" id="updTxt2"></span>
     </div>
   </div>
@@ -424,6 +454,8 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
           <option value="ppm2_asc" data-en="$/m² ↑ Best Value" data-es="$/m² ↑ Mejor Valor">$/m² ↑ Best Value</option>
           <option value="ppm2_desc" data-en="$/m² ↓ Highest" data-es="$/m² ↓ Mayor">$/m² ↓ Highest</option>
           <option value="m2_desc" data-en="Size ↓ Largest first" data-es="Tamaño ↓ Mayor primero">Size ↓ Largest first</option>
+          <option value="newest" data-en="⏱ Newest first" data-es="⏱ Más reciente">⏱ Newest first</option>
+          <option value="price_drop" data-en="▼ Price drops first" data-es="▼ Baja de precio">▼ Price drops first</option>
         </select>
         <span class="res-count" id="resCnt"></span>
       </div>
@@ -440,6 +472,12 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
       <div class="load-more-bar" id="lmBar">
         <button class="btn-more" id="lmBtn" onclick="loadMore()">LOAD MORE</button>
       </div>
+    </div>
+
+    <!-- Map View -->
+    <div id="mapView">
+      <div class="map-legend" id="mapLegend"></div>
+      <div id="mapContainer"></div>
     </div>
 
     <div id="analysisView" style="display:none;">
@@ -498,6 +536,7 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
           </div>
           <div class="fg2" style="display:flex;gap:8px;align-items:flex-end">
             <button class="btn-ana" style="flex:1" onclick="runAnalysis()" data-en="ANALYZE →" data-es="ANALIZAR →">ANALYZE →</button>
+            <button class="btn-share" onclick="shareAnalysis()" title="Copy shareable link" data-en="🔗" data-es="🔗">🔗</button>
             <button class="btn-ana-reset" onclick="resetAnalysis()" title="Reset" data-en="↺" data-es="↺">↺</button>
           </div>
         </div>
@@ -532,6 +571,7 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
   </main>
 </div>
 
+<div class="share-toast" id="shareToast">🔗 Link copied!</div>
 <script src="data.js?v=20260528"></script>
 <script>
 const SOURCES = {
@@ -570,11 +610,13 @@ function setTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab)?.classList.add('active');
-  document.getElementById('listingsView').style.display = tab === 'analysis' ? 'none' : 'block';
+  document.getElementById('listingsView').style.display = (tab === 'analysis' || tab === 'map') ? 'none' : 'block';
   document.getElementById('analysisView').style.display = tab === 'analysis' ? 'block' : 'none';
-  document.querySelector('.sidebar').style.display = tab === 'analysis' ? 'none' : '';
+  document.getElementById('mapView').style.display      = tab === 'map' ? 'block' : 'none';
+  document.querySelector('.sidebar').style.display = (tab === 'analysis' || tab === 'map') ? 'none' : '';
   gridSelected.clear(); updateGridSelectBar();
-  if (tab !== 'analysis') { visible = PAGE; applyFilters(); }
+  if (tab === 'map') { renderMap(); }
+  else if (tab !== 'analysis') { visible = PAGE; applyFilters(); }
 }
 
 // ── HELPERS ───────────────────────────────────────────
@@ -586,6 +628,20 @@ function fmt(n) {
 }
 function fmtFull(n) { return n ? '$' + n.toLocaleString('en-US') : '—'; }
 function getPrice(listing, tab) { return tab === 'rent' ? listing.price_rent : listing.price_sale; }
+
+function daysOnMarket(firstSeen) {
+  if (!firstSeen) return null;
+  const ms = Date.now() - new Date(firstSeen).getTime();
+  return Math.max(0, Math.round(ms / 86400000));
+}
+function domBadgeHtml(dom) {
+  if (dom === null) return '';
+  let cls = 'dom-mid';
+  if (dom <= 7)  cls = 'dom-new';
+  if (dom >= 60) cls = 'dom-old';
+  const label = dom === 0 ? 'NEW TODAY' : dom === 1 ? '1 day' : dom + ' days';
+  return `<span class="dom-badge ${cls}">⏱ ${label}</span>`;
+}
 
 // ── MULTI-SELECT NEIGHBORHOOD ─────────────────────────
 let allHoods = [], selectedHoods = new Set();
@@ -722,6 +778,11 @@ function init() {
     if (ut) ut.textContent = 'Updated: ' + new Date().toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
 
     applyFilters();
+
+    // Load shared analysis URL if hash present
+    if (window.location.hash && window.location.hash.includes('analysis')) {
+      loadAnalysisFromHash();
+    }
   } catch (err) {
     console.error('Dashboard init error:', err);
     const grid = document.getElementById('grid');
@@ -819,6 +880,16 @@ function applyFilters() {
       if (sortMode === 'ppm2_asc')  return (ppa || Infinity) - (ppb || Infinity);
       if (sortMode === 'ppm2_desc') return (ppb || 0) - (ppa || 0);
     }
+    if (sortMode === 'newest') {
+      const da = a.first_seen ? new Date(a.first_seen).getTime() : 0;
+      const db = b.first_seen ? new Date(b.first_seen).getTime() : 0;
+      return db - da;
+    }
+    if (sortMode === 'price_drop') {
+      const dropA = tab === 'rent' ? (a.prev_price_rent && a.price_rent ? a.prev_price_rent - a.price_rent : 0) : (a.prev_price_sale && a.price_sale ? a.prev_price_sale - a.price_sale : 0);
+      const dropB = tab === 'rent' ? (b.prev_price_rent && b.price_rent ? b.prev_price_rent - b.price_rent : 0) : (b.prev_price_sale && b.price_sale ? b.prev_price_sale - b.price_sale : 0);
+      return dropB - dropA;
+    }
     return 0;
   });
 
@@ -880,6 +951,25 @@ function renderCards() {
 
     const location = [listing.neighborhood, listing.district].filter(Boolean).join(', ');
 
+    // Price drop badge
+    const prevPrice = tab === 'rent' ? listing.prev_price_rent : listing.prev_price_sale;
+    let priceDropHtml = '';
+    if (prevPrice && price && prevPrice > price) {
+      const drop = Math.round(prevPrice - price);
+      const dropPct = Math.round((drop / prevPrice) * 100);
+      priceDropHtml = `<span class="price-drop">▼ ${fmt(drop)} (${dropPct}%)</span>`;
+    }
+
+    // Days on market badge
+    const dom = daysOnMarket(listing.first_seen);
+    const domHtml = domBadgeHtml(dom);
+
+    // Listing photo
+    const imgUrl = listing.image || '';
+    const imgHtml = imgUrl
+      ? `<div class="card-img-wrap"><img class="card-img" src="${imgUrl}" loading="lazy" referrerpolicy="no-referrer" alt="" onerror="this.parentElement.classList.add('no-img')"></div>`
+      : '';
+
     // Cross-source duplicate badges
     let altSection = '';
     if (listing._alts && listing._alts.length) {
@@ -905,6 +995,7 @@ function renderCards() {
 
     return `<div class="card${listing.link ? ' has-link' : ''}${listing.exclusive ? ' card-excl' : ''}${isSelected ? ' card-selected' : ''}"
       onclick="${listing.link ? `window.open('${listing.link}','_blank')` : ''}">
+  ${imgHtml}
   <div class="card-hdr">
     <div style="display:flex;align-items:center;gap:8px;">
       <input type="checkbox" class="card-cb" data-id="${listing.id}" ${isSelected ? 'checked' : ''}
@@ -914,11 +1005,13 @@ function renderCards() {
     <div style="text-align:right">
       <div class="card-price">${price ? fmt(price) : '—'}</div>
       ${ppm2 ? `<div class="card-ppm2">$${ppm2.toLocaleString('en-US')}/m²</div>` : ''}
+      ${priceDropHtml}
     </div>
   </div>
   <div class="card-name">${listing.name || listing.building || '—'}</div>
   ${location ? `<div class="card-loc">📍 ${location}</div>` : ''}
   <div class="card-body">
+    ${domHtml ? `<div style="margin-bottom:6px">${domHtml}</div>` : ''}
     <div class="card-specs">${specs}</div>
     ${featBadges ? `<div class="feat-badges">${featBadges}</div>` : ''}
     ${altSection}
@@ -1099,6 +1192,59 @@ function resetAnalysis() {
   ['aNhood','aBeds','aBaths','aPropType','aOp'].forEach(id => { const el = document.getElementById(id); if (el) el.value = el.tagName === 'SELECT' ? '' : ''; });
   ['aM2','aPrice'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const r = document.getElementById('anaResult'); if (r) r.style.display = 'none';
+  if (history.replaceState) history.replaceState(null, '', window.location.pathname + window.location.search);
+}
+
+// ── SHARE ANALYSIS URL ────────────────────────────────
+function shareAnalysis() {
+  const params = {
+    n:  document.getElementById('aNhood')?.value    || '',
+    m:  document.getElementById('aM2')?.value       || '',
+    t:  document.getElementById('aPropType')?.value || '',
+    bd: document.getElementById('aBeds')?.value     || '',
+    bt: document.getElementById('aBaths')?.value    || '',
+    p:  document.getElementById('aPrice')?.value    || '',
+    op: document.getElementById('aOp')?.value       || 'sale',
+  };
+  const hash = Object.entries(params)
+    .filter(([,v]) => v)
+    .map(([k,v]) => k + '=' + encodeURIComponent(v))
+    .join('&');
+  const url = window.location.href.split('#')[0] + '#analysis&' + hash;
+  if (history.replaceState) history.replaceState(null, '', '#analysis&' + hash);
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => showShareToast('🔗 Link copied!'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = url; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showShareToast('🔗 Link copied!');
+  }
+}
+function showShareToast(msg) {
+  const t = document.getElementById('shareToast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+function loadAnalysisFromHash() {
+  const hash = window.location.hash;
+  if (!hash || !hash.includes('analysis')) return;
+  const parts = hash.replace('#','').split('&');
+  if (parts[0] !== 'analysis') return;
+  const params = {};
+  parts.slice(1).forEach(p => {
+    const [k,v] = p.split('=');
+    if (k && v) params[k] = decodeURIComponent(v);
+  });
+  setTab('analysis');
+  const map = { n:'aNhood', m:'aM2', t:'aPropType', bd:'aBeds', bt:'aBaths', p:'aPrice', op:'aOp' };
+  Object.entries(params).forEach(([k,v]) => {
+    const el = document.getElementById(map[k]);
+    if (el) el.value = v;
+  });
+  if (params.n && params.m && params.p) setTimeout(runAnalysis, 200);
 }
 
 // ── PRICE ANALYSIS ────────────────────────────────────
@@ -1418,6 +1564,146 @@ function exportComps() {
   if (btn) { btn.textContent = '⬇ EXPORT SELECTED TO EXCEL'; btn.disabled = false; }
 }
 
+// ── MAP VIEW ──────────────────────────────────────────
+// Neighborhood centroids for Panama City (lat, lng)
+const HOOD_COORDS = {
+  'Punta Pacifica':    [8.9900, -79.5100],
+  'Punta Paitilla':   [8.9920, -79.5080],
+  'Costa del Este':   [9.0100, -79.4500],
+  'Santa Maria':      [9.0300, -79.4800],
+  'Casco Viejo':      [8.9528, -79.5353],
+  'San Francisco':    [9.0050, -79.5000],
+  'Bella Vista':      [8.9900, -79.5200],
+  'Marbella':         [8.9940, -79.5150],
+  'Obarrio':          [9.0000, -79.5100],
+  'El Cangrejo':      [9.0020, -79.5180],
+  'La Cresta':        [9.0060, -79.5250],
+  'Albrook':          [8.9800, -79.5450],
+  'Clayton':          [8.9850, -79.5600],
+  'Amador':           [8.9250, -79.5380],
+  'Ocean Reef':       [8.9100, -79.5200],
+  'Buenaventura':     [8.3800, -80.1400],
+  'Coronado':         [8.5400, -79.9700],
+  'Boquete':          [8.7800, -82.4400],
+  'Bocas del Toro':   [9.3400, -82.2400],
+  'Santa Clara':      [8.4400, -80.0600],
+  'Playa Blanca':     [8.4800, -80.0900],
+  'Panama Pacifico':  [8.9100, -79.6000],
+  'Quarry Heights':   [8.9750, -79.5450],
+  'Pedasi':           [7.5300, -80.0200],
+  'David':            [8.4300, -82.4300],
+  'Chitre':           [7.9600, -80.4300],
+  'Anton':            [8.3900, -80.2700],
+};
+
+let _map = null, _mapMarkers = [];
+
+function renderMap() {
+  const container = document.getElementById('mapContainer');
+  if (!container) return;
+
+  // Init map once
+  if (!_map) {
+    _map = L.map('mapContainer').setView([9.0, -79.51], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19,
+    }).addTo(_map);
+  }
+
+  // Remove old markers
+  _mapMarkers.forEach(m => m.remove());
+  _mapMarkers = [];
+
+  // Group active listings (sale tab) by neighborhood
+  const tab = 'sale'; // map always shows for-sale
+  const byHood = {};
+  ALL_DATA.forEach(l => {
+    if (!l.operation || !l.operation.includes(tab)) return;
+    const price = l.price_sale;
+    const hood  = l.neighborhood;
+    const coords = HOOD_COORDS[hood];
+    if (!coords) return;
+    if (!byHood[hood]) byHood[hood] = { coords, listings: [], prices: [] };
+    byHood[hood].listings.push(l);
+    if (price) byHood[hood].prices.push(price);
+  });
+
+  // Build legend
+  const legend = document.getElementById('mapLegend');
+  if (legend) legend.innerHTML = `
+    <span style="font-family:var(--font-sans);font-size:9.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);">SALE LISTINGS BY NEIGHBORHOOD</span>
+    <span style="margin-left:auto;font-family:var(--font-sans);font-size:9.5px;color:var(--text-muted);">${Object.keys(byHood).length} neighborhoods · ${Object.values(byHood).reduce((a,b)=>a+b.listings.length,0)} listings</span>`;
+
+  // Add markers
+  Object.entries(byHood).forEach(([hood, data]) => {
+    const { coords, listings, prices } = data;
+    const avg = prices.length ? Math.round(prices.reduce((a,b)=>a+b,0)/prices.length) : null;
+    const n   = listings.length;
+
+    // Circle size by listing count (min 18, max 50)
+    const r = Math.min(50, Math.max(18, 18 + Math.sqrt(n) * 3));
+
+    // Color by avg price: green=cheap, orange=mid, red=expensive
+    let color = '#16a34a';
+    if (avg > 500000)  color = '#d97706';
+    if (avg > 1000000) color = '#dc2626';
+
+    const marker = L.circleMarker(coords, {
+      radius: r,
+      fillColor: color,
+      color: '#fff',
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.75,
+    });
+
+    const topListings = listings.slice(0, 5).map(l => {
+      const p = l.price_sale ? fmt(l.price_sale) : '—';
+      const sz = l.const_m2 ? Math.round(parseFloat(l.const_m2)) + ' m²' : '';
+      const bd = l.bedrooms ? l.bedrooms + 'bd' : '';
+      const info = [bd, sz].filter(Boolean).join(' · ');
+      return `<div style="padding:3px 0;border-bottom:1px solid #f0f0f0;font-size:11px">
+        <strong>${p}</strong>${info ? ` <span style="color:#888;font-size:10px">${info}</span>` : ''}
+      </div>`;
+    }).join('');
+
+    marker.bindPopup(`
+      <div style="font-family:Inter,sans-serif;min-width:180px;">
+        <div style="font-weight:700;font-size:13px;margin-bottom:6px">📍 ${hood}</div>
+        <div style="font-size:11px;color:#666;margin-bottom:8px">${n} listing${n!==1?'s':''} · Avg ${avg ? fmt(avg) : '—'}</div>
+        ${topListings}
+        ${n > 5 ? `<div style="font-size:10px;color:#888;margin-top:4px">+${n-5} more</div>` : ''}
+      </div>
+    `, { maxWidth: 240 });
+
+    // Label (number badge) via a divIcon
+    const label = L.divIcon({
+      className: '',
+      html: `<div style="width:${r*2}px;height:${r*2}px;border-radius:50%;background:${color};border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${n>99?9:11}px;font-family:Inter,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,0.3)">${n}</div>`,
+      iconSize: [r*2, r*2],
+      iconAnchor: [r, r],
+    });
+    const iconMarker = L.marker(coords, { icon: label });
+    iconMarker.bindPopup(marker._popup);
+    iconMarker.on('click', () => iconMarker.openPopup());
+    iconMarker.addTo(_map);
+    _mapMarkers.push(iconMarker);
+  });
+
+  // Fit bounds to markers if any
+  if (_mapMarkers.length > 0 && _map) {
+    try {
+      const group = L.featureGroup(_mapMarkers);
+      _map.fitBounds(group.getBounds().pad(0.15));
+    } catch(e) {}
+  }
+
+  // Invalidate size (in case tab was hidden when map initialized)
+  setTimeout(() => _map && _map.invalidateSize(), 100);
+}
+
+// ── INIT ──────────────────────────────────────────────
 // Use both events for maximum mobile compatibility — initDone flag prevents double call
 let initDone = false;
 function safeInit() { if (!initDone) { initDone = true; init(); } }
