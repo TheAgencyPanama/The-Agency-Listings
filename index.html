@@ -653,16 +653,24 @@ function init() {
       }
     });
 
-    // Extract price from title for listings missing a price (common on E24)
+    // Extract/correct price from title (common on E24 which shows rounded K prices on list pages)
     ALL_DATA.forEach(l => {
-      if (!l.price_sale && !l.price_rent && l.name) {
-        // Match patterns like $1,200 or $450,000 or $1200 in the title
-        const m = l.name.match(/\$\s*([\d]{1,3}(?:[,.][\d]{3})*(?:\.\d+)?)/);
+      if (!l.name) return;
+      const existRent = l.price_rent, existSale = l.price_sale;
+      // Trigger if: no price at all, OR existing price is a suspiciously round K value
+      const isRounded = (existRent && existRent % 1000 === 0) || (existSale && existSale % 1000 === 0);
+      if (!existRent && !existSale || isRounded) {
+        const m = l.name.match(/\$\s*([\d]{1,3}(?:,[\d]{3})+(?:\.\d+)?|\d{4,})/);
         if (m) {
           const val = parseFloat(m[1].replace(/,/g, ''));
-          if (val >= 100) { // ignore tiny values
-            if (l.operation?.includes('rent')) l.price_rent = val;
-            else l.price_sale = val;
+          if (val >= 100) {
+            const isRent = l.operation?.includes('rent');
+            const existing = isRent ? existRent : existSale;
+            // Only override if title price is plausible (within 3x of existing or no existing)
+            if (!existing || (val >= existing * 0.5 && val <= existing * 3)) {
+              if (isRent) l.price_rent = val;
+              else l.price_sale = val;
+            }
           }
         }
       }
