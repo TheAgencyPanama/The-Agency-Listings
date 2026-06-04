@@ -211,8 +211,11 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
 .card.card-selected{border-color:var(--red)!important;background:#fff8f8;}
 
 /* ── CARD PHOTO ── */
-.card-img-wrap{width:100%;height:160px;overflow:hidden;background:var(--cream);flex-shrink:0;}
-.card-img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s;}
+.card-img-wrap{width:100%;height:160px;overflow:hidden;background:linear-gradient(110deg,var(--cream) 30%,var(--taupe-light) 50%,var(--cream) 70%);background-size:200% 100%;animation:img-shimmer 1.4s infinite;flex-shrink:0;}
+.card-img-wrap.loaded{background:var(--cream);animation:none;}
+@keyframes img-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.card-img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .35s ease,transform .3s;}
+.card-img.loaded{opacity:1;}
 .card:hover .card-img{transform:scale(1.04);}
 .card-img-wrap.no-img{display:none;}
 
@@ -1089,7 +1092,7 @@ function renderCards() {
     // Listing photo
     const imgUrl = listing.image || '';
     const imgHtml = imgUrl
-      ? `<div class="card-img-wrap"><img class="card-img" src="${imgUrl}" loading="lazy" referrerpolicy="no-referrer" alt="" onerror="this.parentElement.classList.add('no-img')"></div>`
+      ? `<div class="card-img-wrap"><img class="card-img" src="${imgUrl}" loading="lazy" referrerpolicy="no-referrer" alt="" onload="this.classList.add('loaded');this.parentElement.classList.add('loaded')" onerror="this.parentElement.classList.add('no-img')"></div>`
       : '';
 
     // Cross-source duplicate badges
