@@ -602,7 +602,7 @@ function setTab(tab) {
   document.getElementById('listingsView').style.display = tab === 'analysis' ? 'none' : 'block';
   document.getElementById('analysisView').style.display = tab === 'analysis' ? 'block' : 'none';
   document.querySelector('.sidebar').style.display = tab === 'analysis' ? 'none' : '';
-  gridSelected.clear(); updateGridSelectBar();
+  gridSelected.clear(); updateGridSelectBar(); // clear on tab switch (sale ↔ rent)
   if (tab !== 'analysis') { visible = PAGE; applyFilters(); }
 }
 
@@ -950,7 +950,11 @@ function applyFilters() {
   const sMax = document.getElementById('s-max'); if (sMax) sMax.textContent = prices.length ? fmt(Math.max(...prices)) : '—';
   document.getElementById('s-src').textContent   = new Set(filtered.map(l => l.source)).size;
 
-  gridSelected.clear(); updateGridSelectBar();
+  // Keep existing selections that are still in the filtered set
+  for (const id of [...gridSelected.keys()]) {
+    if (!filtered.find(l => l.id === id)) gridSelected.delete(id);
+  }
+  updateGridSelectBar();
   visible = PAGE;
   renderCards();
 }
@@ -1099,12 +1103,14 @@ function clearGridSelection() {
 }
 function exportGridSelected() {
   if (!gridSelected.size) return;
+  if (typeof XLSX === 'undefined') { alert('Excel library not loaded — please refresh the page and try again.'); return; }
   const selected = [...gridSelected.values()];
   const op = currentTab === 'rent' ? 'rent' : 'sale';
   const tabLabel = op === 'rent' ? 'FOR RENT' : 'FOR SALE';
   const dateStr = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
   const btn = document.getElementById('gridExportBtn');
   if (btn) { btn.textContent = '⏳ Generating...'; btn.disabled = true; }
+  try {
 
   const fill  = rgb => ({ patternType:'solid', fgColor:{ rgb } });
   const font  = (rgb, sz, bold, ul) => ({ name:'Arial', color:{ rgb }, sz:sz||10, bold:!!bold, underline:!!ul });
@@ -1212,6 +1218,11 @@ function exportGridSelected() {
   const fname = 'Listings_' + tabLabel.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
   XLSX.writeFile(wb, fname, { cellStyles: true });
   if (btn) { btn.textContent = '⬇ EXPORT TO EXCEL'; btn.disabled = false; }
+  } catch(err) {
+    if (btn) { btn.textContent = '⬇ EXPORT TO EXCEL'; btn.disabled = false; }
+    alert('Export error: ' + err.message);
+    console.error('exportGridSelected error:', err);
+  }
 }
 
 function toggleFeat(id) { document.getElementById(id)?.classList.toggle('active'); applyFilters(); }
@@ -1459,8 +1470,10 @@ function toggleSelectAll(allCb) {
 function exportComps() {
   const cards = [...document.querySelectorAll('#compGrid .comp-card')].filter(c => c.querySelector('.comp-checkbox')?.checked);
   if (!cards.length) return;
+  if (typeof XLSX === 'undefined') { alert('Excel library not loaded — please refresh the page and try again.'); return; }
   const btn = document.getElementById('compExportBtn');
   if (btn) { btn.textContent = '⏳ Generating...'; btn.disabled = true; }
+  try {
 
   const selected = cards.map(c => anaComparables[parseInt(c.dataset.idx)]).filter(Boolean);
   const neighborhood = document.getElementById('aNhood')?.value || 'Panama';
@@ -1604,8 +1617,12 @@ function exportComps() {
   XLSX.utils.book_append_sheet(wb, ws, 'Comparables');
   const fname = 'Comparables_' + neighborhood.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
   XLSX.writeFile(wb, fname, { cellStyles: true });
-
   if (btn) { btn.textContent = '⬇ EXPORT SELECTED TO EXCEL'; btn.disabled = false; }
+  } catch(err) {
+    if (btn) { btn.textContent = '⬇ EXPORT SELECTED TO EXCEL'; btn.disabled = false; }
+    alert('Export error: ' + err.message);
+    console.error('exportComps error:', err);
+  }
 }
 
 
