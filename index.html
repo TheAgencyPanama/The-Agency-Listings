@@ -1129,15 +1129,15 @@ function exportGridSelected() {
   selected.forEach(l => {
     const price = op === 'rent' ? l.price_rent : l.price_sale;
     const m2    = parseFloat(l.const_m2) || 0;
-    const ppm2  = (price && m2) ? Math.round(price/m2) : '';
+    const ppm2  = (price && m2) ? Math.round(price/m2) : null;
     aoa.push([
       l.name || l.building || '—',
       l.neighborhood || '—',
-      price || '',
-      m2    || '',
-      ppm2,
-      l.bedrooms  || '',
-      l.bathrooms || '',
+      price  || '—',
+      m2     || '—',
+      ppm2   || '—',
+      l.bedrooms  || '—',
+      l.bathrooms || '—',
       (SOURCES[l.source]||{label:l.source}).label,
     ]);
   });
@@ -1147,26 +1147,27 @@ function exportGridSelected() {
     return (p&&m) ? p/m : null;
   }).filter(Boolean);
   const avgPpm2 = ppms.length ? Math.round(ppms.reduce((a,b)=>a+b,0)/ppms.length) : null;
-  if (avgPpm2) {
-    aoa.push(['','','','','','','','']);
-    aoa.push(['AVERAGE PRICE / m²','','','', avgPpm2 ,'','','']);
-  }
+  // Always show the average row; show '—' if no m² data available
+  aoa.push(['','','','','','','','']);
+  const avgLabel = ppms.length
+    ? `AVERAGE PRICE / m² (${ppms.length} of ${selected.length} listings)`
+    : `AVERAGE PRICE / m² (no size data available)`;
+  aoa.push([avgLabel,'','','', avgPpm2 || '—','','','']);
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(aoa);
 
+  // avgR is always present now (spacer + average row added unconditionally)
+  const avgR = dataStart - 1 + selected.length + 1;
   ws['!merges'] = [
     { s:{r:0,c:0}, e:{r:0,c:7} },
     { s:{r:1,c:0}, e:{r:1,c:7} },
     { s:{r:2,c:0}, e:{r:2,c:7} },
+    { s:{r:avgR,c:0}, e:{r:avgR,c:3} },
   ];
-  if (avgPpm2) {
-    const avgR = dataStart - 1 + selected.length + 1;
-    ws['!merges'].push({ s:{r:avgR,c:0}, e:{r:avgR,c:3} });
-  }
 
-  ws['!cols'] = [{wch:38},{wch:18},{wch:15},{wch:11},{wch:13},{wch:7},{wch:8},{wch:20}];
-  ws['!rows'] = [{hpt:30},{hpt:16},{hpt:6},{hpt:20},...selected.map(()=>({hpt:18}))];
+  ws['!cols'] = [{wch:42},{wch:18},{wch:15},{wch:11},{wch:13},{wch:7},{wch:8},{wch:20}];
+  ws['!rows'] = [{hpt:30},{hpt:16},{hpt:6},{hpt:20},...selected.map(()=>({hpt:18})),{hpt:6},{hpt:20}];
 
   const enc = (r,c) => XLSX.utils.encode_cell({r,c});
 
@@ -1201,17 +1202,17 @@ function exportGridSelected() {
       if(nc){ nc.l={Target:l.link}; nc.s.font=font('0563C1',10,false,true); }
     }
   });
-  // Average row
-  if(avgPpm2){
-    const avgR = dataStart - 1 + selected.length + 1;
-    const lbl=ws[enc(avgR,0)];
-    if(lbl){ lbl.s={font:font(RD,10,true),fill:fill(RDLT),alignment:align('left','center'),border:bord(BD)}; }
-    const val=ws[enc(avgR,4)];
-    if(val){ val.s={font:font(RD,12,true),fill:fill(RDLT),alignment:align('center','center'),border:bord(BD)}; val.z='$#,##0';val.t='n';val.v=avgPpm2; }
-    for(const c of [1,2,3,5,6,7]){
-      let cell=ws[enc(avgR,c)]; if(!cell){ws[enc(avgR,c)]={v:'',t:'s'};cell=ws[enc(avgR,c)];}
-      cell.s = { fill:fill(RDLT), border:bord(BD) };
-    }
+  // Average row — always shown
+  const lbl=ws[enc(avgR,0)];
+  if(lbl){ lbl.s={font:font(RD,10,true),fill:fill(RDLT),alignment:align('left','center'),border:bord(BD)}; }
+  const val=ws[enc(avgR,4)];
+  if(val){
+    val.s={font:font(RD,12,true),fill:fill(RDLT),alignment:align('center','center'),border:bord(BD)};
+    if(avgPpm2){ val.z='$#,##0'; val.t='n'; val.v=avgPpm2; }
+  }
+  for(const c of [1,2,3,5,6,7]){
+    let cell=ws[enc(avgR,c)]; if(!cell){ws[enc(avgR,c)]={v:'',t:'s'};cell=ws[enc(avgR,c)];}
+    cell.s = { fill:fill(RDLT), border:bord(BD) };
   }
 
   XLSX.utils.book_append_sheet(wb, ws, tabLabel);
