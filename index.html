@@ -1086,10 +1086,6 @@ function renderCards() {
       priceDropHtml = `<span class="price-drop">▼ ${fmt(drop)} (${dropPct}%)</span>`;
     }
 
-    // Days on market badge
-    const dom = daysOnMarket(listing.first_seen);
-    const domHtml = domBadgeHtml(dom);
-
     // Listing photo
     const imgUrl = listing.image || '';
     const imgHtml = imgUrl
@@ -1137,7 +1133,6 @@ function renderCards() {
   <div class="card-name">${listing.name || listing.building || '—'}</div>
   ${location ? `<div class="card-loc">📍 ${location}</div>` : ''}
   <div class="card-body">
-    ${domHtml ? `<div style="margin-bottom:6px">${domHtml}</div>` : ''}
     <div class="card-specs">${specs}</div>
     ${featBadges ? `<div class="feat-badges">${featBadges}</div>` : ''}
     ${altSection}
