@@ -572,9 +572,11 @@ const SOURCES = {
   'PANEQ':     { label:'Panama Equity',    color:'#0891B2', bg:'#ECFEFF', text:'#0e7490' },
   'SOVEREIGN': { label:'Panama Sovereign', color:'#047857', bg:'#ECFDF5', text:'#065f46' },
   'PUNTAPAC':  { label:'Punta Pacifica',   color:'#0e7490', bg:'#f0f9ff', text:'#0369a1' },
+  'JAMESEDITION':{ label:'JamesEdition',   color:'#334155', bg:'#f1f5f9', text:'#334155' },
 };
 
 let currentTab = 'sale', currentLang = 'en', filtered = [], visible = 24;
+let hideDuplicates = true;   // hide JamesEdition listings tagged as likely duplicates
 let anaComparables = [], anaOperation = 'sale';
 let gridSelected = new Map(); // id → listing object (for main grid export)
 const PAGE = 24;
@@ -821,6 +823,16 @@ function init() {
           <span class="src-cnt">${count}</span>
         </label>`;
       });
+      // Duplicate toggle (JamesEdition listings that also appear via a direct source)
+      const dupCount = ALL_DATA.filter(l => l.duplicate).length;
+      if (dupCount > 0) {
+        srcDiv.innerHTML += `<label class="src-cb" onclick="toggleDuplicates(event)" style="border-top:1px solid var(--line,#eee);margin-top:6px;padding-top:8px">
+          <input type="checkbox" ${hideDuplicates ? 'checked' : ''} id="dupToggle">
+          <span class="src-dot" style="background:#94a3b8"></span>
+          <span class="src-lbl">Hide duplicates</span>
+          <span class="src-cnt">${dupCount}</span>
+        </label>`;
+      }
     }
 
     const ut = document.getElementById('updTxt');
@@ -898,6 +910,8 @@ function applyFilters() {
     // Source — only filter if a checkbox exists for this source
     const hasCb = document.querySelector(`#srcFilters input[value="${listing.source}"]`);
     if (hasCb && !activeSources.has(listing.source)) return false;
+    // Hide JamesEdition likely-duplicates when the toggle is on
+    if (hideDuplicates && listing.duplicate) return false;
     // Neighborhood multi-select
     if (selectedHoods.size > 0 && !selectedHoods.has(listing.neighborhood)) return false;
     // Feature toggles
@@ -1228,6 +1242,14 @@ function exportGridSelected() {
 
 function toggleFeat(id) { document.getElementById(id)?.classList.toggle('active'); applyFilters(); }
 function handleSrcClick() { setTimeout(applyFilters, 0); }
+function toggleDuplicates(ev) {
+  // Let the checkbox toggle, then read its state
+  setTimeout(() => {
+    const cb = document.getElementById('dupToggle');
+    if (cb) hideDuplicates = cb.checked;
+    applyFilters();
+  }, 0);
+}
 function showAllSources() {
   document.querySelectorAll('#srcFilters input[type=checkbox]').forEach(c => c.checked = true);
   applyFilters();
