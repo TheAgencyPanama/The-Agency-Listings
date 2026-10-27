@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Agency RE — Panama Market Dashboard</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --red:       #ed1c24;
+  --red-dark:  #cc0000;
+  --red-light: #fdf2f2;
+  --cream:     #f5f1e9;
+  --taupe:     #ccb19e;
+  --taupe-light:#ede7df;
+  --black:     #000000;
+  --off-black: #1a1a1a;
+  --white:     #ffffff;
+  --text:      #1a1a1a;
+  --text-muted:#888880;
+  --border:    #e8e2da;
+  --shadow:    0 2px 12px rgba(0,0,0,0.08);
+  --shadow-hover: 0 8px 28px rgba(0,0,0,0.16);
+  --radius:    6px;
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans:  'Inter', 'Helvetica Neue', Arial, sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-height:100vh;}
+
+/* ── TOP BAR (two-column header like dashboard) ── */
+.top-bar{display:flex;position:sticky;top:0;z-index:200;box-shadow:0 2px 20px rgba(0,0,0,0.18);}
+
+/* Left black panel */
+.top-left{width:280px;min-width:280px;background:var(--black);padding:20px 22px 0;display:flex;flex-direction:column;}
+.logo-mark{width:40px;height:40px;background:var(--red);display:flex;align-items:center;justify-content:center;font-family:var(--font-sans);font-weight:700;font-size:15px;color:var(--white);letter-spacing:-1px;margin-bottom:10px;}
+.logo-eyebrow{font-family:var(--font-sans);font-size:8px;font-weight:700;letter-spacing:3.5px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:3px;}
+.logo-brand{font-family:var(--font-serif);font-size:16px;font-weight:500;color:var(--white);line-height:1.2;}
+.logo-sub{font-family:var(--font-sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--taupe);margin-top:1px;}
+
+/* Right white panel */
+.top-right{flex:1;background:var(--white);border-bottom:1px solid var(--border);display:flex;flex-direction:column;min-width:0;}
+.top-title-row{display:flex;align-items:flex-start;justify-content:space-between;padding:18px 28px 14px;gap:20px;}
+.top-title-left{}
+.top-title{font-family:var(--font-serif);font-size:26px;font-weight:500;color:var(--black);letter-spacing:-.5px;line-height:1.15;margin-bottom:5px;}
+.top-breadcrumb{font-family:var(--font-sans);font-size:9px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-muted);}
+.top-breadcrumb .bc-active{color:var(--red);}
+
+/* Stats inline top-right */
+.stats-inline{display:flex;align-items:flex-start;gap:20px;flex-shrink:0;}
+.si{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+.si-val{font-family:var(--font-serif);font-size:22px;font-weight:600;color:var(--black);letter-spacing:-.5px;line-height:1;}
+.si-lbl{font-size:8.5px;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);font-weight:600;white-space:nowrap;}
+.si-div{width:1px;background:var(--border);align-self:stretch;margin-top:4px;}
+
+/* Lang toggle */
+.lang-toggle{display:flex;background:var(--cream);border-radius:4px;overflow:hidden;border:1px solid var(--border);align-self:flex-start;}
+.lang-btn{padding:5px 11px;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;border:none;background:transparent;color:var(--text-muted);transition:all .18s;}
+.lang-btn.active{background:var(--red);color:var(--white);}
+
+/* Tabs row (white background, red active) */
+.tabs-bar{background:var(--white);border-top:1px solid var(--border);display:flex;padding:0 28px;align-items:center;}
+.tab-btn{padding:11px 22px;font-family:var(--font-sans);font-size:9.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;cursor:pointer;border:none;background:transparent;color:var(--text-muted);border-bottom:2px solid transparent;transition:all .18s;}
+.tab-btn.active{color:var(--red);border-bottom-color:var(--red);}
+.tab-btn:hover:not(.active){color:var(--black);}
+.tab-bullet{color:var(--red);margin-right:6px;font-size:8px;}
+.upd-txt{font-size:9.5px;color:var(--text-muted);letter-spacing:.5px;margin-left:auto;padding-right:4px;}
+
+/* ── LAYOUT ── */
+.layout{display:flex;min-height:calc(100vh - 118px);}
+
+/* ── SIDEBAR ── */
+.sidebar{width:280px;min-width:280px;background:var(--white);border-right:1px solid var(--border);padding:22px 18px;position:sticky;top:120px;height:calc(100vh - 120px);overflow-y:auto;}
+.sb-title{font-family:var(--font-sans);font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--red);margin-bottom:20px;}
+.fg{margin-bottom:20px;}
+.fg label{display:block;font-size:9.5px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+.fg select,.fg input[type=text],.fg input[type=number]{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--font-sans);font-size:12px;background:var(--cream);color:var(--text);outline:none;transition:border-color .18s;-webkit-appearance:none;}
+.fg select:focus,.fg input:focus{border-color:var(--red);}
+.price-row{display:flex;gap:6px;align-items:center;}
+.price-row input{flex:1;}
+.price-sep{color:var(--text-muted);font-size:12px;}
+.range-row{display:flex;align-items:center;gap:6px;}
+.range-in{width:calc(50% - 14px);padding:7px 8px;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--font-sans);font-size:11px;background:var(--white);color:var(--text);outline:none;}
+.range-in:focus{border-color:var(--red);}
+.src-filters{display:flex;flex-direction:column;gap:5px;}
+.src-cb{display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 8px;border-radius:5px;transition:background .13s;}
+.src-cb:hover{background:var(--cream);}
+.src-cb input{width:14px;height:14px;accent-color:var(--red);cursor:pointer;}
+.src-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.src-lbl{font-size:11px;font-weight:500;color:var(--text);flex:1;}
+.src-cnt{font-size:10px;color:var(--text-muted);background:var(--cream);padding:1px 6px;border-radius:8px;}
+.btn-reset{width:100%;padding:9px;background:transparent;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--font-sans);font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;color:var(--text-muted);margin-top:8px;transition:all .18s;}
+.btn-reset:hover{border-color:var(--red);color:var(--red);}
+
+/* ── NEIGHBORHOOD MULTI-SELECT ── */
+.hood-wrap{position:relative;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);min-height:34px;padding:4px 8px;cursor:text;}
+.hood-wrap:focus-within{border-color:var(--red);}
+.hood-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:3px;}
+.hood-tag{display:inline-flex;align-items:center;gap:4px;background:var(--red);color:var(--white);border-radius:3px;padding:2px 8px;font-size:10px;font-weight:600;letter-spacing:.5px;white-space:nowrap;}
+.hood-tag-x{cursor:pointer;opacity:.8;font-size:12px;line-height:1;}
+.hood-tag-x:hover{opacity:1;}
+.hood-input{border:none;outline:none;background:transparent;font-family:var(--font-sans);font-size:11px;color:var(--text);width:100%;min-width:80px;padding:2px 0;}
+.hood-opts{position:absolute;top:100%;left:-1px;right:-1px;background:var(--white);border:1px solid var(--red);border-top:none;border-radius:0 0 var(--radius) var(--radius);max-height:260px;overflow-y:auto;z-index:200;display:none;}
+.hood-opts.open{display:block;}
+.hood-opt{padding:7px 10px;font-family:var(--font-sans);font-size:11px;cursor:pointer;display:flex;align-items:center;gap:7px;}
+.hood-opt:hover,.hood-opt.selected{background:var(--cream);}
+.hood-opt.selected{color:var(--red);font-weight:600;}
+.hood-opt-check{width:12px;height:12px;border:1px solid var(--border);border-radius:2px;display:inline-block;flex-shrink:0;}
+.hood-opt.selected .hood-opt-check{background:var(--red);border-color:var(--red);}
+
+/* ── MAIN CONTENT ── */
+.main{flex:1;padding:24px 26px;min-width:0;}
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.search-wrap{flex:1;min-width:180px;position:relative;}
+.search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--text-muted);}
+.search-wrap input{width:100%;padding:9px 14px 9px 34px;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--font-sans);font-size:12px;background:var(--white);outline:none;transition:border-color .18s;}
+.search-wrap input:focus{border-color:var(--red);}
+.sort-sel{padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--font-sans);font-size:11px;background:var(--white);color:var(--text);outline:none;cursor:pointer;}
+.sort-sel:focus{border-color:var(--red);}
+.res-count{font-family:var(--font-sans);font-size:11px;color:var(--text-muted);white-space:nowrap;}
+
+/* ── CARDS GRID ── */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(288px,1fr));gap:14px;}
+
+/* ── CARD ── */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:box-shadow .2s,transform .2s;cursor:default;display:flex;flex-direction:column;}
+.card.has-link{cursor:pointer;}
+.card:hover{box-shadow:var(--shadow-hover);transform:translateY(-2px);}
+.card-excl{border-color:var(--red);border-width:2px;}
+.card-hdr{padding:12px 14px 10px;border-bottom:1px solid var(--taupe-light);display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.card-badges{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.card-name{font-family:var(--font-serif);font-size:14px;font-weight:500;color:var(--black);line-height:1.3;padding:11px 14px 4px;}
+.card-loc{font-family:var(--font-sans);font-size:10.5px;color:var(--text-muted);padding:0 14px 10px;display:flex;align-items:center;gap:4px;}
+.card-body{padding:4px 14px 12px;flex:1;}
+.card-price{font-family:var(--font-serif);font-size:22px;font-weight:600;color:var(--black);letter-spacing:-.5px;margin-bottom:8px;}
+.card-specs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.spec{display:flex;align-items:center;gap:3px;font-family:var(--font-sans);font-size:10.5px;color:var(--off-black);background:var(--cream);padding:3px 9px;border-radius:12px;}
+.card-ftr{padding:9px 14px;background:var(--cream);border-top:1px solid var(--taupe-light);display:flex;align-items:center;justify-content:space-between;}
+.card-id{font-family:var(--font-sans);font-size:9.5px;color:var(--text-muted);letter-spacing:.5px;}
+.card-link{font-family:var(--font-sans);font-size:10px;font-weight:700;color:var(--red);text-decoration:none;letter-spacing:1px;display:flex;align-items:center;gap:3px;text-transform:uppercase;transition:color .18s;}
+.card-link:hover{color:var(--red-dark);}
+
+/* ── BADGES ── */
+.sbadge{font-family:var(--font-sans);font-size:9px;font-weight:700;letter-spacing:.5px;padding:3px 7px;border-radius:3px;white-space:nowrap;flex-shrink:0;text-transform:uppercase;}
+.excl-badge{font-family:var(--font-sans);font-size:8.5px;font-weight:700;letter-spacing:1px;padding:2px 7px;background:var(--red);color:var(--white);border-radius:3px;text-transform:uppercase;}
+.mls-num{font-family:var(--font-sans);font-size:9px;color:var(--text-muted);letter-spacing:.5px;}
+.card-alts{display:flex;flex-wrap:wrap;gap:4px;padding:0 14px 10px;}
+.alt-badge{font-family:var(--font-sans);font-size:9px;padding:3px 7px;border-radius:3px;font-weight:700;cursor:pointer;transition:opacity .15s;text-transform:uppercase;}
+.alt-badge:hover{opacity:.75;}
+
+/* ── LOAD MORE ── */
+.load-more-bar{display:flex;justify-content:center;padding:24px 0;}
+.btn-more{padding:11px 32px;background:var(--black);color:var(--white);border:none;border-radius:var(--radius);font-family:var(--font-sans);font-size:10.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:background .18s;}
+.btn-more:hover{background:var(--red);}
+.no-res{text-align:center;padding:80px 20px;color:var(--text-muted);grid-column:1/-1;font-family:var(--font-sans);font-size:13px;}
+
+/* ── ANALYSIS VIEW ── */
+.ana-section{max-width:680px;margin:0 auto;padding:10px 0 40px;}
+.ana-title{font-family:var(--font-serif);font-size:26px;font-weight:500;color:var(--black);margin-bottom:8px;letter-spacing:-.3px;}
+.ana-sub{font-family:var(--font-sans);font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:24px;}
+.ana-form{display:grid;grid-template-columns:1fr 1fr;gap:14px;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:22px;}
+.fg2{display:flex;flex-direction:column;gap:6px;}
+.fg2 label{font-family:var(--font-sans);font-size:9.5px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);}
+.fg2 select,.fg2 input{padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--font-sans);font-size:12px;background:var(--cream);color:var(--text);outline:none;width:100%;}
+.fg2 select:focus,.fg2 input:focus{border-color:var(--red);}
+.btn-ana{width:100%;padding:12px;background:var(--red);color:var(--white);border:none;border-radius:var(--radius);font-family:var(--font-sans);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-top:auto;transition:background .18s;}
+.btn-ana:hover{background:var(--red-dark);}
+.ana-result{margin-top:28px;display:none;}
+.verdict{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:22px;text-align:center;margin-bottom:16px;}
+.gauge-box{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:18px 22px;margin-bottom:16px;}
+.gauge-bar{height:8px;background:linear-gradient(to right,#16a34a,#d97706,#ea580c,#dc2626);border-radius:4px;position:relative;margin:12px 0;}
+.gauge-pin{position:absolute;top:-5px;width:18px;height:18px;background:var(--black);border:2px solid var(--white);border-radius:50%;transform:translateX(-50%);box-shadow:0 2px 6px rgba(0,0,0,0.25);transition:left .4s ease;}
+.gauge-lbls{display:flex;justify-content:space-between;font-family:var(--font-sans);font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;}
+.range-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+.range-box{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center;}
+.rv{font-family:var(--font-serif);font-size:17px;font-weight:600;color:var(--black);}
+.rl{font-family:var(--font-sans);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-top:3px;}
+.comp-sec-lbl{font-family:var(--font-sans);font-size:9.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--red);margin-bottom:10px;}
+.comp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;max-height:520px;overflow-y:auto;padding-right:4px;}
+.comp-grid::-webkit-scrollbar{width:5px;}.comp-grid::-webkit-scrollbar-track{background:transparent;}.comp-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.comp-card{background:var(--white);border:1px solid var(--border);border-radius:6px;padding:12px 14px;transition:border-color .15s;}
+.comp-card.selected{border-color:var(--red);background:#fff8f8;}
+.comp-checkbox{width:14px;height:14px;accent-color:var(--red);cursor:pointer;flex-shrink:0;}
+.comp-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.comp-bar-left{display:flex;align-items:center;gap:10px;}
+.btn-comp-export{padding:6px 13px;background:var(--red);color:var(--white);border:none;border-radius:var(--radius);font-family:var(--font-sans);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:background .18s;white-space:nowrap;}
+.btn-comp-export:hover{background:var(--red-dark);}
+.btn-comp-export:disabled{background:#ccc;cursor:not-allowed;}
+.comp-sel-count{font-family:var(--font-sans);font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);}
+.btn-ana-reset{padding:12px 14px;background:transparent;border:1px solid var(--border);border-radius:var(--radius);font-size:16px;cursor:pointer;color:var(--text-muted);transition:all .18s;white-space:nowrap;}.btn-ana-reset:hover{border-color:var(--red);color:var(--red);}
+
+/* ── FEATURE TOGGLES (sidebar) ── */
+.feat-toggles{display:flex;flex-wrap:wrap;gap:6px;}
+.feat-toggle{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border:1px solid var(--border);border-radius:20px;font-family:var(--font-sans);font-size:10px;font-weight:600;letter-spacing:.3px;cursor:pointer;color:var(--text-muted);background:var(--white);transition:all .18s;user-select:none;white-space:nowrap;}
+.feat-toggle:hover{border-color:var(--red);color:var(--red);}
+.feat-toggle.active{background:var(--red);color:var(--white);border-color:var(--red);}
+/* Feature badges on cards */
+.feat-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px;}
+.feat-badge{font-family:var(--font-sans);font-size:8.5px;font-weight:700;letter-spacing:.5px;padding:2px 7px;border-radius:3px;text-transform:uppercase;white-space:nowrap;}
+.feat-furnished{background:#f0fdf4;color:#15803d;}
+.feat-ocean{background:#eff6ff;color:#1d4ed8;}
+.feat-city{background:#f5f3ff;color:#6d28d9;}
+/* Price/m² sub-label on card */
+.card-ppm2{font-family:var(--font-sans);font-size:10px;color:var(--text-muted);font-weight:500;letter-spacing:.3px;margin-top:1px;}
+
+/* ── GRID SELECTION BAR ── */
+.grid-select-bar{display:none;background:var(--white);border:1px solid var(--red);border-radius:var(--radius);padding:10px 16px;margin-bottom:14px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;box-shadow:0 2px 12px rgba(204,0,0,0.10);}
+.grid-select-bar.active{display:flex;}
+.card-cb{width:15px;height:15px;accent-color:var(--red);cursor:pointer;flex-shrink:0;}
+.card.card-selected{border-color:var(--red)!important;background:#fff8f8;}
+
+/* ── CARD PHOTO ── */
+.card-img-wrap{width:100%;height:160px;overflow:hidden;background:linear-gradient(110deg,var(--cream) 30%,var(--taupe-light) 50%,var(--cream) 70%);background-size:200% 100%;animation:img-shimmer 1.4s infinite;flex-shrink:0;}
+.card-img-wrap.loaded{background:var(--cream);animation:none;}
+@keyframes img-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.card-img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .35s ease,transform .3s;}
+.card-img.loaded{opacity:1;}
+.card:hover .card-img{transform:scale(1.04);}
+.card-img-wrap.no-img{display:none;}
+
+/* ── PRICE DROP BADGE ── */
+.price-drop{font-family:var(--font-sans);font-size:8.5px;font-weight:700;letter-spacing:.3px;padding:2px 7px;border-radius:3px;background:#fef2f2;color:#dc2626;white-space:nowrap;display:flex;align-items:center;gap:3px;}
+
+/* ── DAYS ON MARKET BADGE ── */
+.dom-badge{font-family:var(--font-sans);font-size:8.5px;font-weight:600;letter-spacing:.3px;padding:2px 7px;border-radius:3px;white-space:nowrap;}
+.dom-new{background:#f0fdf4;color:#15803d;}
+.dom-mid{background:var(--cream);color:var(--text-muted);}
+.dom-old{background:#fff7ed;color:#c2410c;}
+
+
+/* ── SHARE ANALYSIS BUTTON ── */
+.btn-share{padding:12px 14px;background:transparent;border:1px solid var(--border);border-radius:var(--radius);font-size:14px;cursor:pointer;color:var(--text-muted);transition:all .18s;white-space:nowrap;}.btn-share:hover{border-color:var(--red);color:var(--red);}
+.share-toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--black);color:var(--white);padding:10px 20px;border-radius:6px;font-family:var(--font-sans);font-size:12px;font-weight:600;letter-spacing:.5px;z-index:9000;opacity:0;transition:opacity .3s;pointer-events:none;}
+.share-toast.show{opacity:1;}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--cream);}
+::-webkit-scrollbar-thumb{background:var(--taupe);border-radius:2px;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .sidebar{display:none;}
+  header{padding:0 16px;}
+  .main{padding:16px;}
+  .stats-bar{padding:10px 16px;gap:14px;}
+  .tabs-bar{padding:0 16px;}
+  .range-grid{grid-template-columns:1fr 1fr;}
+  .ana-form{grid-template-columns:1fr;}
+}
+
+
+/* ── MOBILE SIDEBAR TOGGLE ── */
+.mob-filter-btn{display:none;position:fixed;bottom:20px;right:20px;z-index:300;background:var(--red);color:#fff;border:none;border-radius:50%;width:52px;height:52px;font-size:20px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.3);}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:299;}
+@media(max-width:768px){
+  .sidebar{display:none;position:fixed;top:0;left:0;bottom:0;width:290px;z-index:300;overflow-y:auto;padding-top:60px;}
+  .sidebar.mob-open{display:block;}
+  .sidebar-overlay.mob-open{display:block;}
+  .mob-filter-btn{display:flex;align-items:center;justify-content:center;}
+  header{padding:0 16px;height:56px;}
+  .tabs-bar{padding:0 10px;}
+  .tab-btn{padding:11px 14px;font-size:9px;letter-spacing:1.5px;}
+  .main{padding:14px 12px;}
+  .stats-bar{padding:10px 14px;gap:14px;overflow-x:auto;}
+  .stat-val{font-size:17px;}
+  .cards-grid{grid-template-columns:1fr;}
+  .range-grid{grid-template-columns:1fr 1fr;}
+  .ana-form{grid-template-columns:1fr;}
+  .toolbar{gap:8px;}
+  .search-wrap input{font-size:14px;}
+  .logo-text .t2{display:none;}
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="pw-gate" style="position:fixed;inset:0;background:#000;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;padding:40px 36px;border-radius:8px;width:100%;max-width:360px;text-align:center;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:4px;color:#ed1c24;margin-bottom:4px;">THE AGENCY RE</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:#000;margin-bottom:4px;">Panama Market</div>
+    <div style="font-size:10px;letter-spacing:2px;color:#999;margin-bottom:32px;text-transform:uppercase;">Dashboard</div>
+    <input id="pw-input" type="password" placeholder="Enter password" autocomplete="current-password"
+      style="width:100%;padding:11px 14px;border:1px solid #e8e2da;border-radius:6px;font-size:14px;margin-bottom:12px;outline:none;font-family:Inter,sans-serif;"
+      onfocus="this.style.borderColor='#ed1c24'" onblur="this.style.borderColor='#e8e2da'"
+      onkeydown="if(event.key==='Enter')checkPw()">
+    <button onclick="checkPw()"
+      style="width:100%;padding:12px;background:#ed1c24;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;">
+      ENTER →
+    </button>
+    <div id="pw-err" style="color:#ed1c24;font-size:11px;margin-top:10px;display:none;">Incorrect password. Try again.</div>
+  </div>
+</div>
+<script>
+(function(){
+  function checkPw(){
+    const val=document.getElementById('pw-input').value;
+    if(val==='2026TheAgency'){
+      document.getElementById('pw-gate').style.display='none';
+      sessionStorage.setItem('ta_auth','ok');
+    } else {
+      document.getElementById('pw-err').style.display='block';
+      document.getElementById('pw-input').value='';
+      document.getElementById('pw-input').focus();
+    }
+  }
+  window.checkPw=checkPw;
+  if(sessionStorage.getItem('ta_auth')==='ok')
+    document.addEventListener('DOMContentLoaded',function(){
+      document.getElementById('pw-gate').style.display='none';
+    });
+})();
+</script>
+
+
+
+<div class="top-bar">
+  <div class="top-left">
+    <div class="logo-mark">A</div>
+    <div class="logo-eyebrow">INTELLIGENCE REPORT</div>
+    <div class="logo-brand">The Agency RE</div>
+    <div class="logo-sub">Panama</div>
+  </div>
+  <div class="top-right">
+    <div class="top-title-row">
+      <div class="top-title-left">
+        <div class="top-title" data-en="ReVa — Panama Market" data-es="ReVa — Mercado Panamá">ReVa — Panama Market</div>
+        <div class="top-breadcrumb">REAL-TIME DATA · 6 SOURCES · <span class="bc-active" id="updTxt">UPDATED: MAY 2026</span></div>
+      </div>
+      <div class="stats-inline">
+        <div class="si"><span class="si-val" id="s-total">—</span><span class="si-lbl">LISTINGS</span></div>
+        <div class="si-div"></div>
+        <div class="si"><span class="si-val" id="s-avg">—</span><span class="si-lbl">AVG PRICE</span></div>
+        <div class="si-div"></div>
+        <div class="si"><span class="si-val" id="s-src">—</span><span class="si-lbl">SOURCES</span></div>
+        <div class="si-div"></div>
+        <div class="si"><span class="si-val" id="s-min">—</span><span class="si-lbl">MIN PRICE</span></div>
+        <div style="margin-left:12px">
+          <div class="lang-toggle">
+            <button class="lang-btn active" onclick="setLang('en')">EN</button>
+            <button class="lang-btn" onclick="setLang('es')">ES</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tabs-bar">
+      <span class="tab-bullet">◆</span>
+      <button class="tab-btn active" id="tab-sale" onclick="setTab('sale')" data-en="FOR SALE" data-es="EN VENTA">FOR SALE</button>
+      <button class="tab-btn" id="tab-rent" onclick="setTab('rent')" data-en="FOR RENT" data-es="EN ALQUILER">FOR RENT</button>
+      <button class="tab-btn" id="tab-analysis" onclick="setTab('analysis')" data-en="⚖ PRICE ANALYSIS" data-es="⚖ ANÁLISIS">⚖ PRICE ANALYSIS</button>
+      <span class="upd-txt" id="updTxt2"></span>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile sidebar toggle -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileSidebar()"></div>
+<button class="mob-filter-btn" onclick="toggleMobileSidebar()" title="Filters">⚙</button>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sb-title" data-en="FILTERS" data-es="FILTROS">FILTERS</div>
+    <div class="fg">
+      <label data-en="SEARCH (building, name...)" data-es="BUSCAR (edificio, nombre...)">SEARCH (building, name...)</label>
+      <div style="position:relative">
+        <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;color:#888">🔍</span>
+        <input type="text" id="sbSearch" placeholder="PH Yoo, Punta Pacifica..." oninput="syncSearch(this.value)" style="width:100%;padding:8px 11px 8px 30px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;background:var(--cream);color:var(--text);outline:none;" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+    </div>
+    <div class="fg">
+      <label data-en="NEIGHBORHOOD" data-es="BARRIO">NEIGHBORHOOD</label>
+      <div class="hood-wrap" id="hoodWrap">
+        <div class="hood-tags" id="hoodTags"></div>
+        <input type="text" id="hoodSearch" class="hood-input" placeholder="Type to search..." oninput="filterHoodOpts()" onfocus="showHoodOpts()" onblur="setTimeout(hideHoodOpts,200)" autocomplete="off">
+        <div class="hood-opts" id="hoodOpts"></div>
+      </div>
+    </div>
+    <div class="fg">
+      <label data-en="PRICE RANGE (USD)" data-es="RANGO DE PRECIO (USD)">PRICE RANGE (USD)</label>
+      <div class="price-row">
+        <input type="number" id="fPMin" placeholder="Min" onchange="applyFilters()" step="5000">
+        <span class="price-sep">–</span>
+        <input type="number" id="fPMax" placeholder="Max" onchange="applyFilters()" step="5000">
+      </div>
+    </div>
+    <div class="fg">
+      <label data-en="BEDROOMS" data-es="DORMITORIOS">BEDROOMS</label>
+      <div class="range-row">
+        <input type="number" id="fBedsMin" placeholder="Min" min="0" max="20" onchange="applyFilters()" class="range-in">
+        <span class="price-sep">–</span>
+        <input type="number" id="fBedsMax" placeholder="Max" min="0" max="20" onchange="applyFilters()" class="range-in">
+      </div>
+    </div>
+    <div class="fg">
+      <label data-en="BATHROOMS" data-es="BAÑOS">BATHROOMS</label>
+      <div class="range-row">
+        <input type="number" id="fBathsMin" placeholder="Min" min="0" max="20" onchange="applyFilters()" class="range-in">
+        <span class="price-sep">–</span>
+        <input type="number" id="fBathsMax" placeholder="Max" min="0" max="20" onchange="applyFilters()" class="range-in">
+      </div>
+    </div>
+    <div class="fg">
+      <label data-en="SIZE m² RANGE" data-es="TAMAÑO m² RANGO">SIZE m² RANGE</label>
+      <div class="range-row">
+        <input type="number" id="fM2Min" placeholder="Min" onchange="applyFilters()" class="range-in">
+        <span class="price-sep">–</span>
+        <input type="number" id="fM2Max" placeholder="Max" onchange="applyFilters()" class="range-in">
+      </div>
+    </div>
+    <div class="fg">
+      <label data-en="PROPERTY TYPE" data-es="TIPO">PROPERTY TYPE</label>
+      <select id="fType" onchange="applyFilters()">
+        <option value="" data-en="All types" data-es="Todos">All types</option>
+        <option value="apartment" data-en="Apartment" data-es="Apartamento">Apartment</option>
+        <option value="house" data-en="House / Villa" data-es="Casa / Villa">House / Villa</option>
+        <option value="land" data-en="Lot / Land" data-es="Lote / Terreno">Lot / Land</option>
+        <option value="commercial" data-en="Commercial" data-es="Comercial">Commercial</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label data-en="FEATURES" data-es="CARACTERÍSTICAS">FEATURES</label>
+      <div class="feat-toggles">
+        <div class="feat-toggle" id="fFurnished" onclick="toggleFeat('fFurnished')" data-en="🛋 Furnished" data-es="🛋 Amueblado">🛋 Furnished</div>
+        <div class="feat-toggle" id="fOceanView" onclick="toggleFeat('fOceanView')" data-en="🌊 Ocean View" data-es="🌊 Vista al Mar">🌊 Ocean View</div>
+        <div class="feat-toggle" id="fCityView"  onclick="toggleFeat('fCityView')"  data-en="🏙 City View"  data-es="🏙 Vista Ciudad">🏙 City View</div>
+      </div>
+    </div>
+    <div class="fg">
+      <label data-en="SOURCE" data-es="FUENTE">SOURCE</label>
+      <div class="src-filters" id="srcFilters"></div>
+    </div>
+    <button class="btn-reset" onclick="resetFilters()" data-en="RESET ALL FILTERS" data-es="REINICIAR FILTROS">RESET ALL FILTERS</button>
+  </aside>
+
+  <main class="main">
+    <div id="listingsView">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <span class="search-ico">🔍</span>
+          <input type="text" id="searchIn" placeholder="Search by name, neighborhood, building..." oninput="syncSearch(this.value)">
+        </div>
+        <select class="sort-sel" id="sortSel" onchange="applyFilters()">
+          <option value="price_asc" data-en="Price ↑ Low to High" data-es="Precio ↑ Menor a Mayor">Price ↑ Low to High</option>
+          <option value="price_desc" data-en="Price ↓ High to Low" data-es="Precio ↓ Mayor a Menor">Price ↓ High to Low</option>
+          <option value="ppm2_asc" data-en="$/m² ↑ Best Value" data-es="$/m² ↑ Mejor Valor">$/m² ↑ Best Value</option>
+          <option value="ppm2_desc" data-en="$/m² ↓ Highest" data-es="$/m² ↓ Mayor">$/m² ↓ Highest</option>
+          <option value="m2_desc" data-en="Size ↓ Largest first" data-es="Tamaño ↓ Mayor primero">Size ↓ Largest first</option>
+          <option value="newest" data-en="⏱ Newest first" data-es="⏱ Más reciente">⏱ Newest first</option>
+          <option value="price_drop" data-en="▼ Price drops first" data-es="▼ Baja de precio">▼ Price drops first</option>
+        </select>
+        <span class="res-count" id="resCnt"></span>
+      </div>
+      <!-- Selection bar (appears when cards are checked) -->
+      <div class="grid-select-bar" id="gridSelectBar">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <span style="font-family:var(--font-sans);font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);" id="gridSelCount">0 SELECTED</span>
+          <button onclick="clearGridSelection()" style="padding:5px 11px;background:transparent;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--font-sans);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;color:var(--text-muted);transition:all .18s;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">✕ CLEAR</button>
+        </div>
+        <button class="btn-comp-export" id="gridExportBtn" onclick="exportGridSelected()" style="padding:9px 22px;font-size:10px;letter-spacing:1.5px;">⬇ EXPORT TO EXCEL</button>
+      </div>
+
+      <div class="cards-grid" id="grid"></div>
+      <div class="load-more-bar" id="lmBar">
+        <button class="btn-more" id="lmBtn" onclick="loadMore()">LOAD MORE</button>
+      </div>
+    </div>
+
+
+    <div id="analysisView" style="display:none;">
+      <div class="ana-section">
+        <div class="ana-title" data-en="SELLER PRICE ANALYSIS" data-es="ANÁLISIS DE PRECIO PARA VENDEDORES">SELLER PRICE ANALYSIS</div>
+        <div class="ana-sub" data-en="Enter your property details to get a market pricing recommendation based on current active listings." data-es="Ingresa los detalles de tu propiedad para obtener una recomendación de precio basada en el mercado actual.">
+          Enter your property details to get a market pricing recommendation based on current active listings.
+        </div>
+        <div class="ana-form">
+          <div class="fg2">
+            <label data-en="NEIGHBORHOOD" data-es="BARRIO">NEIGHBORHOOD</label>
+            <select id="aNhood"><option value="" data-en="Select..." data-es="Seleccionar...">Select...</option></select>
+          </div>
+          <div class="fg2">
+            <label data-en="SIZE (m²)" data-es="TAMAÑO (m²)">SIZE (m²)</label>
+            <input type="number" id="aM2" placeholder="120">
+          </div>
+          <div class="fg2">
+            <label data-en="PROPERTY TYPE" data-es="TIPO">PROPERTY TYPE</label>
+            <select id="aPropType">
+              <option value="" data-en="All types" data-es="Todos">All types</option>
+              <option value="apartment" data-en="Apartment" data-es="Apartamento">Apartment</option>
+              <option value="house" data-en="House / Villa" data-es="Casa / Villa">House / Villa</option>
+              <option value="land" data-en="Lot / Land" data-es="Lote / Terreno">Lot / Land</option>
+              <option value="commercial" data-en="Commercial" data-es="Comercial">Commercial</option>
+            </select>
+          </div>
+          <div class="fg2">
+            <label data-en="BEDROOMS" data-es="DORMITORIOS">BEDROOMS</label>
+            <select id="aBeds">
+              <option value="">—</option>
+              <option value="1">1</option><option value="2">2</option>
+              <option value="3">3</option><option value="4">4</option><option value="5">5+</option>
+            </select>
+          </div>
+          <div class="fg2">
+            <label data-en="BATHROOMS" data-es="BAÑOS">BATHROOMS</label>
+            <select id="aBaths">
+              <option value="">—</option>
+              <option value="1">1</option><option value="1.5">1.5</option>
+              <option value="2">2</option><option value="2.5">2.5</option>
+              <option value="3">3</option><option value="3.5">3.5</option>
+              <option value="4">4+</option>
+            </select>
+          </div>
+          <div class="fg2">
+            <label data-en="YOUR ASKING PRICE ($)" data-es="TU PRECIO PEDIDO ($)">YOUR ASKING PRICE ($)</label>
+            <input type="number" id="aPrice" placeholder="350000">
+          </div>
+          <div class="fg2">
+            <label data-en="OPERATION" data-es="OPERACIÓN">OPERATION</label>
+            <select id="aOp">
+              <option value="sale" data-en="For Sale" data-es="En Venta">For Sale</option>
+              <option value="rent" data-en="For Rent" data-es="En Alquiler">For Rent</option>
+            </select>
+          </div>
+          <div class="fg2" style="display:flex;gap:8px;align-items:flex-end">
+            <button class="btn-ana" style="flex:1" onclick="runAnalysis()" data-en="ANALYZE →" data-es="ANALIZAR →">ANALYZE →</button>
+            <button class="btn-share" onclick="shareAnalysis()" title="Copy shareable link" data-en="🔗" data-es="🔗">🔗</button>
+            <button class="btn-ana-reset" onclick="resetAnalysis()" title="Reset" data-en="↺" data-es="↺">↺</button>
+          </div>
+        </div>
+        <div class="ana-result" id="anaResult">
+          <div class="verdict" id="verdict"></div>
+          <div class="gauge-box">
+            <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);" data-en="Price positioning vs. market" data-es="Posición vs. mercado">Price positioning vs. market</div>
+            <div class="gauge-bar"><div class="gauge-pin" id="gaugePin"></div></div>
+            <div class="gauge-lbls">
+              <span data-en="Below market" data-es="Por debajo">Below market</span>
+              <span data-en="At market" data-es="En mercado">At market</span>
+              <span data-en="Above market" data-es="Por encima">Above market</span>
+            </div>
+          </div>
+          <div class="range-grid" id="rangeGrid"></div>
+          <div class="comp-bar" id="compBar" style="display:none;">
+            <div class="comp-bar-left">
+              <div class="comp-sec-lbl" id="compSecLbl">COMPARABLE LISTINGS</div>
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;color:var(--text-muted);font-family:var(--font-sans);font-weight:600;letter-spacing:1px;text-transform:uppercase;">
+                <input type="checkbox" id="compSelectAll" onchange="toggleSelectAll(this)" style="width:13px;height:13px;accent-color:var(--red);">ALL
+              </label>
+              <span class="comp-sel-count" id="compSelCount">0 selected</span>
+            </div>
+          </div>
+          <div class="comp-grid" id="compGrid"></div>
+          <div id="compExportBar" style="display:none;margin-top:14px;text-align:center;">
+            <button class="btn-comp-export" id="compExportBtn" onclick="exportComps()" style="padding:11px 28px;font-size:11px;letter-spacing:2px;">⬇ EXPORT SELECTED TO EXCEL</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="share-toast" id="shareToast">🔗 Link copied!</div>
+<script src="data.js?v=20260528"></script>
+<script>
+const SOURCES = {
+  'MLS':       { label:'Panama MLS',       color:'#1D4ED8', bg:'#EFF6FF', text:'#1e40af' },
+  'EV':        { label:'Engel & Völkers',  color:'#7c5c3a', bg:'#fdf6ee', text:'#7c5c3a' },
+  'THE_AGENCY':{ label:'The Agency RE',    color:'#cc0000', bg:'#fff0f0', text:'#cc0000' },
+  'E24':       { label:'Encuentra24',      color:'#7C3AED', bg:'#F5F3FF', text:'#5b21b6' },
+  'SERVMOR':   { label:'Servmor Realty',   color:'#EA580C', bg:'#FFF7ED', text:'#c2410c' },
+  'PANEQ':     { label:'Panama Equity',    color:'#0891B2', bg:'#ECFEFF', text:'#0e7490' },
+  'SOVEREIGN': { label:'Panama Sovereign', color:'#047857', bg:'#ECFDF5', text:'#065f46' },
+  'PUNTAPAC':  { label:'Punta Pacifica',   color:'#0e7490', bg:'#f0f9ff', text:'#0369a1' },
+};
+
+let currentTab = 'sale', currentLang = 'en', filtered = [], visible = 24;
+let anaComparables = [], anaOperation = 'sale';
+let gridSelected = new Map(); // id → listing object (for main grid export)
+const PAGE = 24;
+
+// ── LANGUAGE ──────────────────────────────────────────
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === lang.toUpperCase()));
+  document.querySelectorAll('[data-en]').forEach(el => {
+    const t = el.getAttribute('data-' + lang);
+    if (t && el.tagName !== 'INPUT') el.textContent = t;
+  });
+  const si = document.getElementById('searchIn');
+  if (si) si.placeholder = lang === 'es' ? 'Buscar por nombre, barrio, edificio...' : 'Search by name, neighborhood, building...';
+  const ut = document.getElementById('updTxt');
+  if (ut) ut.textContent = (lang === 'es' ? 'Actualizado: ' : 'Updated: ') + new Date().toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
+  applyFilters();
+}
+
+// ── TABS ──────────────────────────────────────────────
+function setTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab)?.classList.add('active');
+  document.getElementById('listingsView').style.display = tab === 'analysis' ? 'none' : 'block';
+  document.getElementById('analysisView').style.display = tab === 'analysis' ? 'block' : 'none';
+  document.querySelector('.sidebar').style.display = tab === 'analysis' ? 'none' : '';
+  gridSelected.clear(); updateGridSelectBar(); // clear on tab switch (sale ↔ rent)
+  if (tab !== 'analysis') { visible = PAGE; applyFilters(); }
+}
+
+// ── HELPERS ───────────────────────────────────────────
+function fmt(n) {
+  if (!n) return '—';
+  if (n >= 1e6) return '$' + (n / 1e6).toFixed(2).replace(/\.?0+$/, '') + ' M';
+  if (n >= 1e3) return '$' + (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return '$' + n.toLocaleString('en-US');
+}
+function fmtFull(n) { return n ? '$' + n.toLocaleString('en-US') : '—'; }
+function getPrice(listing, tab) { return tab === 'rent' ? listing.price_rent : listing.price_sale; }
+
+function daysOnMarket(firstSeen) {
+  if (!firstSeen) return null;
+  const ms = Date.now() - new Date(firstSeen).getTime();
+  return Math.max(0, Math.round(ms / 86400000));
+}
+function domBadgeHtml(dom) {
+  if (dom === null) return '';
+  let cls = 'dom-mid';
+  if (dom <= 7)  cls = 'dom-new';
+  if (dom >= 60) cls = 'dom-old';
+  const label = dom === 0 ? 'NEW TODAY' : dom === 1 ? '1 day' : dom + ' days';
+  return `<span class="dom-badge ${cls}">⏱ ${label}</span>`;
+}
+
+// ── MULTI-SELECT NEIGHBORHOOD ─────────────────────────
+let allHoods = [], selectedHoods = new Set();
+
+function renderHoodTags() {
+  const wrap = document.getElementById('hoodTags');
+  if (!wrap) return;
+  wrap.innerHTML = [...selectedHoods].map(h =>
+    `<span class="hood-tag">${h}<span class="hood-tag-x" onmousedown="event.preventDefault();removeHood('${h.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"')}')">×</span></span>`
+  ).join('');
+}
+function removeHood(h) { selectedHoods.delete(h); renderHoodTags(); filterHoodOpts(); applyFilters(); }
+function showHoodOpts() { filterHoodOpts(); document.getElementById('hoodOpts')?.classList.add('open'); }
+function hideHoodOpts() { document.getElementById('hoodOpts')?.classList.remove('open'); }
+function filterHoodOpts() {
+  const query = (document.getElementById('hoodSearch')?.value || '').toLowerCase().trim();
+  const el = document.getElementById('hoodOpts');
+  if (!el) return;
+  el.innerHTML = allHoods
+    .filter(h => !query || h.toLowerCase().includes(query))
+    .slice(0, 60)
+    .map(h => {
+      const isSelected = selectedHoods.has(h);
+      const safe = h.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"');
+      return `<div class="hood-opt${isSelected ? ' selected' : ''}" onmousedown="event.preventDefault();toggleHood('${safe}')">
+        <span class="hood-opt-check"></span>${h}
+      </div>`;
+    }).join('');
+}
+function toggleHood(h) {
+  selectedHoods.has(h) ? selectedHoods.delete(h) : selectedHoods.add(h);
+  renderHoodTags(); filterHoodOpts(); applyFilters();
+}
+
+// ── OPEN MULTIPLE LINKS ───────────────────────────────
+function openAllLinks(e, urls) {
+  e.stopPropagation();
+  e.preventDefault();
+  // Must stay synchronous inside click event to bypass popup blocker
+  urls.forEach(url => { if (url) window.open(url, '_blank'); });
+}
+
+// ── MOBILE SIDEBAR ────────────────────────────────────
+function toggleMobileSidebar() {
+  document.querySelector('.sidebar')?.classList.toggle('mob-open');
+  document.getElementById('sidebarOverlay')?.classList.toggle('mob-open');
+}
+function closeMobileSidebar() {
+  document.querySelector('.sidebar')?.classList.remove('mob-open');
+  document.getElementById('sidebarOverlay')?.classList.remove('mob-open');
+}
+
+// ── NEIGHBORHOOD NORMALIZATION ────────────────────────
+// Applied client-side so existing data.js is fixed immediately (no rescrape needed).
+// Keys are lowercase + no accents (like utils.py normalize_text). Values = canonical display name.
+const HOOD_NORM = {
+  // Accent / capitalisation variants
+  'altos del maria':          'Altos del María',
+  'ancon':                    'Ancón',
+  'ancon panama':             'Ancón',
+  'anton':                    'Antón',
+  'arraijan':                 'Arraiján',
+  'baru':                     'Barú',
+  'boqueron':                 'Boquerón',
+  'calle 50':                 'Calle 50',
+  'cocle':                    'Coclé',
+  'costa del este':           'Costa del Este',
+  'curundu':                  'Curundú',
+  'farallon':                 'Farallón',
+  'juan diaz':                'Juan Díaz',
+  'nata':                     'Natá',
+  'panama oeste':             'Panamá Oeste',
+  'paraiso':                  'Paraíso',
+  'pedasi':                   'Pedasí',
+  'penonome':                 'Penonomé',
+  'pocri':                    'Pocrí',
+  'punta barco':              'Punta Barco',
+  'rio hato':                 'Río Hato',
+  'tole':                     'Tolé',
+  'via espana':               'Vía España',
+  'volcan':                   'Volcán',
+  // Same place, different name
+  'ocean reef islands':       'Ocean Reef',
+  'paitilla':                 'Punta Paitilla',
+  'casco viejo, san felipe':  'Casco Viejo',
+  'casco antiguo':            'Casco Viejo',
+  'altos del golf':           'Altos de Golf',
+  'bethania':                 'Betania',
+  'portobello':               'Portobelo',
+  'pearl islands':            'Pearl Island',
+  'santa maria panama':       'Santa Maria',
+  'el valle de anton':        'El Valle',
+  'el valle, panama':         'El Valle',
+  'amador, cause way':        'Amador Causeway',
+  // Standard
+  'santa maria':              'Santa Maria',
+  'punta pacifica':           'Punta Pacifica',
+  'panama pacifico':          'Panama Pacifico',
+};
+
+function normalizeHood(h) {
+  if (!h) return '';
+  // Collapse multiple spaces, strip trailing punct
+  const clean = h.replace(/\s+/g, ' ').replace(/[!?,;:]+$/, '').trim();
+  // Build lookup key: lowercase + strip accents
+  const key = clean.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, ' ').trim();
+  return HOOD_NORM[key] || clean;
+}
+
+// ── INIT ──────────────────────────────────────────────
+function init() {
+  try {
+    // Fix known data mapping errors
+    ALL_DATA.forEach(l => {
+      if (l.name && l.name.toLowerCase().includes('diana tower')) l.neighborhood = 'Obarrio';
+    });
+
+    // Normalize all neighborhood names (fixes accents, case, aliases)
+    ALL_DATA.forEach(l => { l.neighborhood = normalizeHood(l.neighborhood); });
+    // Normalize E24 bathroom format ("35" → "3.5", "25" → "2.5", etc.)
+    ALL_DATA.forEach(l => {
+      if (l.source === 'E24' && l.bathrooms) {
+        const b = parseFloat(l.bathrooms);
+        if (b > 10) l.bathrooms = String(b / 10);
+      }
+    });
+
+    // Extract/correct price from title (common on E24 which shows rounded K prices on list pages)
+    ALL_DATA.forEach(l => {
+      if (!l.name) return;
+      const existRent = l.price_rent, existSale = l.price_sale;
+      // Trigger if: no price at all, OR existing price is a suspiciously round K value
+      const isRounded = (existRent && existRent % 1000 === 0) || (existSale && existSale % 1000 === 0);
+      if (!existRent && !existSale || isRounded) {
+        const m = l.name.match(/\$\s*([\d]{1,3}(?:,[\d]{3})+(?:\.\d+)?|\d{4,})/);
+        if (m) {
+          const val = parseFloat(m[1].replace(/,/g, ''));
+          if (val >= 100) {
+            const isRent = l.operation?.includes('rent');
+            const existing = isRent ? existRent : existSale;
+            // Only override if title price is plausible (within 3x of existing or no existing)
+            if (!existing || (val >= existing * 0.5 && val <= existing * 3)) {
+              if (isRent) l.price_rent = val;
+              else l.price_sale = val;
+            }
+          }
+        }
+      }
+    });
+
+    // Detect features (furnished, ocean view, city view) from listing titles
+    ALL_DATA.forEach(l => {
+      const txt = [l.name, l.building, l.address].filter(Boolean).join(' ').toLowerCase();
+      l._furnished = /furnished|amueblad[ao]|amoblad[ao]|turn.?key|con muebles|full furniture|fully furnished/.test(txt);
+      l._oceanView = /ocean.?view|sea.?view|vista.?al.?mar|vista.?mar|frente.?al.?mar|oceanfront|beach.?front|beachfront|frente.?playa|vista.?oce/.test(txt);
+      l._cityView  = /city.?view|vista.?ciudad|vista.?a.?la.?ciudad|panoramic.?view|vista.?panoram/.test(txt);
+    });
+
+    // Build neighborhood list from all unique neighborhoods
+    const hoodSet = new Set(ALL_DATA.map(l => l.neighborhood).filter(Boolean));
+    allHoods = [...hoodSet].sort();
+
+    // Populate analysis neighborhood dropdown
+    const aNhood = document.getElementById('aNhood');
+    if (aNhood) {
+      allHoods.forEach(h => {
+        const opt = document.createElement('option');
+        opt.value = h; opt.textContent = h;
+        aNhood.appendChild(opt);
+      });
+    }
+
+    // Build source filter checkboxes with counts
+    const srcDiv = document.getElementById('srcFilters');
+    if (srcDiv) {
+      const counts = {};
+      ALL_DATA.forEach(l => { counts[l.source] = (counts[l.source] || 0) + 1; });
+      srcDiv.innerHTML = `<div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+        <span onclick="showAllSources()" style="font-size:9.5px;color:var(--red);cursor:pointer;letter-spacing:1px;font-weight:700;text-transform:uppercase">SHOW ALL</span>
+      </div>`;
+      // Build from actual data sources (not just config) so new scrapers appear automatically
+      Object.entries(counts).sort((a,b) => b[1]-a[1]).forEach(([key, count]) => {
+        const cfg = SOURCES[key] || { label: key, color:'#888', bg:'#f5f5f5', text:'#555' };
+        srcDiv.innerHTML += `<label class="src-cb" onclick="handleSrcClick(event,'${key}')">
+          <input type="checkbox" checked value="${key}">
+          <span class="src-dot" style="background:${cfg.color}"></span>
+          <span class="src-lbl">${cfg.label}</span>
+          <span class="src-cnt">${count}</span>
+        </label>`;
+      });
+    }
+
+    const ut = document.getElementById('updTxt');
+    if (ut) ut.textContent = 'Updated: ' + new Date().toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
+
+    applyFilters();
+
+    // Load shared analysis URL if hash present
+    if (window.location.hash && window.location.hash.includes('analysis')) {
+      loadAnalysisFromHash();
+    }
+  } catch (err) {
+    console.error('Dashboard init error:', err);
+    const grid = document.getElementById('grid');
+    if (grid) grid.innerHTML = '<div class="no-res">⚠️ Error loading data. Please refresh the page.</div>';
+  }
+}
+
+// ── FILTERS ───────────────────────────────────────────
+function syncSearch(val) {
+  const main = document.getElementById('searchIn');
+  const sidebar = document.getElementById('sbSearch');
+  if (main && main.value !== val) main.value = val;
+  if (sidebar && sidebar.value !== val) sidebar.value = val;
+  applyFilters();
+}
+
+function applyFilters() {
+  const tab = currentTab === 'analysis' ? 'sale' : currentTab;
+  const query = (document.getElementById('searchIn')?.value || document.getElementById('sbSearch')?.value || '').toLowerCase().trim();
+  const priceMin = parseFloat(document.getElementById('fPMin')?.value) || 0;
+  const priceMax = parseFloat(document.getElementById('fPMax')?.value) || Infinity;
+  const bedsMin  = parseInt(document.getElementById('fBedsMin')?.value) || 0;
+  const bedsMax  = parseInt(document.getElementById('fBedsMax')?.value) || Infinity;
+  const bathsMin = parseInt(document.getElementById('fBathsMin')?.value) || 0;
+  const bathsMax = parseInt(document.getElementById('fBathsMax')?.value) || Infinity;
+  const m2Min    = parseFloat(document.getElementById('fM2Min')?.value) || 0;
+  const m2Max    = parseFloat(document.getElementById('fM2Max')?.value) || Infinity;
+  const typeFilter = (document.getElementById('fType')?.value || '').toLowerCase();
+  const activeSources = new Set([...document.querySelectorAll('#srcFilters input[type=checkbox]:checked')].map(c => c.value));
+  const sortMode = document.getElementById('sortSel')?.value || 'price_asc';
+  const wantFurnished = document.getElementById('fFurnished')?.classList.contains('active');
+  const wantOceanView = document.getElementById('fOceanView')?.classList.contains('active');
+  const wantCityView  = document.getElementById('fCityView')?.classList.contains('active');
+
+  filtered = ALL_DATA.filter(listing => {
+    // Operation (sale/rent)
+    if (!listing.operation || !listing.operation.includes(tab)) return false;
+    // Price range
+    const price = getPrice(listing, tab);
+    if (price) {
+      if (priceMin && price < priceMin) return false;
+      if (priceMax < Infinity && price > priceMax) return false;
+    }
+    // Bedrooms range
+    if (bedsMin || bedsMax < Infinity) {
+      const beds = parseInt(listing.bedrooms) || 0;
+      if (bedsMin && beds < bedsMin) return false;
+      if (bedsMax < Infinity && beds > bedsMax) return false;
+    }
+    // Bathrooms range
+    if (bathsMin || bathsMax < Infinity) {
+      const baths = parseFloat(listing.bathrooms) || 0;
+      if (bathsMin && baths < bathsMin) return false;
+      if (bathsMax < Infinity && baths > bathsMax) return false;
+    }
+    // Size m² range
+    if (m2Min || m2Max < Infinity) {
+      const m2 = parseFloat(listing.const_m2) || 0;
+      if (m2Min && m2 < m2Min) return false;
+      if (m2Max < Infinity && m2 > m2Max) return false;
+    }
+    // Property type
+    if (typeFilter && listing.type && listing.type.toLowerCase() !== typeFilter) return false;
+    // Source — only filter if a checkbox exists for this source
+    const hasCb = document.querySelector(`#srcFilters input[value="${listing.source}"]`);
+    if (hasCb && !activeSources.has(listing.source)) return false;
+    // Neighborhood multi-select
+    if (selectedHoods.size > 0 && !selectedHoods.has(listing.neighborhood)) return false;
+    // Feature toggles
+    if (wantFurnished && !listing._furnished) return false;
+    if (wantOceanView && !listing._oceanView) return false;
+    if (wantCityView  && !listing._cityView)  return false;
+    // Text search
+    if (query) {
+      const haystack = [listing.name, listing.building, listing.address, listing.neighborhood, listing.district, listing.id]
+        .filter(Boolean).join(' ').toLowerCase();
+      if (!haystack.includes(query)) return false;
+    }
+    return true;
+  });
+
+  // Sort: exclusive first → The Agency → others → by chosen sort
+  filtered.sort((a, b) => {
+    if (a.exclusive && !b.exclusive) return -1;
+    if (!a.exclusive && b.exclusive) return 1;
+    if (a.source === 'THE_AGENCY' && b.source !== 'THE_AGENCY') return -1;
+    if (a.source !== 'THE_AGENCY' && b.source === 'THE_AGENCY') return 1;
+    const pa = getPrice(a, tab), pb = getPrice(b, tab);
+    if (sortMode === 'price_asc')  return (pa || Infinity) - (pb || Infinity);
+    if (sortMode === 'price_desc') return (pb || 0) - (pa || 0);
+    if (sortMode === 'm2_desc')    return (parseFloat(b.const_m2) || 0) - (parseFloat(a.const_m2) || 0);
+    if (sortMode === 'ppm2_asc' || sortMode === 'ppm2_desc') {
+      const ma = parseFloat(a.const_m2), mb = parseFloat(b.const_m2);
+      const ppa = (pa && ma) ? pa/ma : null, ppb = (pb && mb) ? pb/mb : null;
+      if (sortMode === 'ppm2_asc')  return (ppa || Infinity) - (ppb || Infinity);
+      if (sortMode === 'ppm2_desc') return (ppb || 0) - (ppa || 0);
+    }
+    if (sortMode === 'newest') {
+      const da = a.first_seen ? new Date(a.first_seen).getTime() : 0;
+      const db = b.first_seen ? new Date(b.first_seen).getTime() : 0;
+      return db - da;
+    }
+    if (sortMode === 'price_drop') {
+      const dropA = tab === 'rent' ? (a.prev_price_rent && a.price_rent ? a.prev_price_rent - a.price_rent : 0) : (a.prev_price_sale && a.price_sale ? a.prev_price_sale - a.price_sale : 0);
+      const dropB = tab === 'rent' ? (b.prev_price_rent && b.price_rent ? b.prev_price_rent - b.price_rent : 0) : (b.prev_price_sale && b.price_sale ? b.prev_price_sale - b.price_sale : 0);
+      return dropB - dropA;
+    }
+    return 0;
+  });
+
+  // Update stats bar
+  const prices = filtered.map(l => getPrice(l, tab)).filter(Boolean);
+  document.getElementById('s-total').textContent = filtered.length.toLocaleString('en-US');
+  document.getElementById('s-avg').textContent   = prices.length ? fmt(Math.round(prices.reduce((a,b) => a+b, 0) / prices.length)) : '—';
+  document.getElementById('s-min').textContent   = prices.length ? fmt(Math.min(...prices)) : '—';
+  const sMax = document.getElementById('s-max'); if (sMax) sMax.textContent = prices.length ? fmt(Math.max(...prices)) : '—';
+  document.getElementById('s-src').textContent   = new Set(filtered.map(l => l.source)).size;
+
+  // Keep existing selections that are still in the filtered set
+  for (const id of [...gridSelected.keys()]) {
+    if (!filtered.find(l => l.id === id)) gridSelected.delete(id);
+  }
+  updateGridSelectBar();
+  visible = PAGE;
+  renderCards();
+}
+
+// ── RENDER CARDS ──────────────────────────────────────
+function renderCards() {
+  const tab  = currentTab === 'analysis' ? 'sale' : currentTab;
+  const grid = document.getElementById('grid');
+  if (!grid) return;
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="no-res">No listings match your filters.</div>';
+    document.getElementById('lmBar').style.display = 'none';
+    document.getElementById('resCnt').textContent  = '0 results';
+    return;
+  }
+
+  grid.innerHTML = filtered.slice(0, visible).map(listing => {
+    const price = getPrice(listing, tab);
+    const src   = SOURCES[listing.source] || { bg:'#f5f5f5', text:'#444', label: listing.source };
+    const isSelected = gridSelected.has(listing.id);
+    const safeId = (listing.id || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+
+    const exclusiveBadge = listing.exclusive ? '<span class="excl-badge">EXCLUSIVE</span>' : '';
+    const sourceBadge    = `<span class="sbadge" style="background:${src.bg};color:${src.text}">${src.label}</span>`;
+
+    let mlsNumber = '';
+    if (listing.source === 'THE_AGENCY') {
+      mlsNumber = `<span class="mls-num">${(listing.id || '').replace(/^ta-/i, '')}</span>`;
+    } else if (listing.source === 'MLS' && listing.id) {
+      mlsNumber = `<span class="mls-num">#${listing.id}</span>`;
+    }
+
+    const m2value = parseFloat(listing.const_m2);
+    const ppm2 = (price && m2value) ? Math.round(price / m2value) : null;
+    const specs = [
+      listing.bedrooms ? `<span class="spec">🛏 ${listing.bedrooms}</span>` : '',
+      listing.bathrooms ? `<span class="spec">🚿 ${listing.bathrooms}</span>` : '',
+      m2value ? `<span class="spec">${m2value < 10 ? m2value.toFixed(1) : Math.round(m2value)} m²</span>` : '',
+      listing.parking ? `<span class="spec">🅿 ${listing.parking}</span>` : '',
+    ].join('');
+    const featBadges = [
+      listing._furnished ? '<span class="feat-badge feat-furnished">🛋 Furnished</span>' : '',
+      listing._oceanView ? '<span class="feat-badge feat-ocean">🌊 Ocean View</span>' : '',
+      listing._cityView  ? '<span class="feat-badge feat-city">🏙 City View</span>'  : '',
+    ].filter(Boolean).join('');
+
+    const location = [listing.neighborhood, listing.district].filter(Boolean).join(', ');
+
+    // Price drop badge
+    const prevPrice = tab === 'rent' ? listing.prev_price_rent : listing.prev_price_sale;
+    let priceDropHtml = '';
+    if (prevPrice && price && prevPrice > price) {
+      const drop = Math.round(prevPrice - price);
+      const dropPct = Math.round((drop / prevPrice) * 100);
+      priceDropHtml = `<span class="price-drop">▼ ${fmt(drop)} (${dropPct}%)</span>`;
+    }
+
+    // Listing photo
+    const imgUrl = listing.image || '';
+    const imgHtml = imgUrl
+      ? `<div class="card-img-wrap"><img class="card-img" src="${imgUrl}" loading="lazy" referrerpolicy="no-referrer" alt="" onload="this.classList.add('loaded');this.parentElement.classList.add('loaded')" onerror="this.parentElement.classList.add('no-img')"></div>`
+      : '';
+
+    // Cross-source duplicate badges
+    let altSection = '';
+    if (listing._alts && listing._alts.length) {
+      const altBadges = listing._alts.map(alt => {
+        const altSrc = SOURCES[alt.source] || { bg:'#eee', text:'#444', label: alt.source };
+        return `<span class="alt-badge" style="background:${altSrc.bg};color:${altSrc.text}"
+          onclick="event.stopPropagation();window.open('${alt.link}','_blank')">
+          ${altSrc.label}${alt.price ? ' ' + fmt(alt.price) : ''}
+        </span>`;
+      }).join('');
+      const allUrls = [listing.link, ...listing._alts.map(a => a.link)].filter(Boolean);
+      altSection = `<div class="card-alts">
+        <span style="font-size:9px;color:var(--text-muted);align-self:center;letter-spacing:.5px">ALSO ON:</span>
+        ${altBadges}
+        <span class="alt-badge" style="background:#000;color:#fff"
+          onclick="openAllLinks(event,[${allUrls.map(u => `'${u}'`).join(',')}])">ALL ↗</span>
+      </div>`;
+    }
+
+    const viewLink = listing.link
+      ? `<a class="card-link" onclick="event.stopPropagation()" href="${listing.link}" target="_blank">VIEW →</a>`
+      : '<span></span>';
+
+    return `<div class="card${listing.link ? ' has-link' : ''}${listing.exclusive ? ' card-excl' : ''}${isSelected ? ' card-selected' : ''}"
+      onclick="${listing.link ? `window.open('${listing.link}','_blank')` : ''}">
+  ${imgHtml}
+  <div class="card-hdr">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" class="card-cb" data-id="${listing.id}" ${isSelected ? 'checked' : ''}
+        onclick="event.stopPropagation()" onchange="onCardCheck(this,'${safeId}')">
+      <div class="card-badges">${sourceBadge}${exclusiveBadge}</div>
+    </div>
+    <div style="text-align:right">
+      <div class="card-price">${price ? fmt(price) : '—'}</div>
+      ${ppm2 ? `<div class="card-ppm2">$${ppm2.toLocaleString('en-US')}/m²</div>` : ''}
+      ${priceDropHtml}
+    </div>
+  </div>
+  <div class="card-name">${listing.name || listing.building || '—'}</div>
+  ${location ? `<div class="card-loc">📍 ${location}</div>` : ''}
+  <div class="card-body">
+    <div class="card-specs">${specs}</div>
+    ${featBadges ? `<div class="feat-badges">${featBadges}</div>` : ''}
+    ${altSection}
+  </div>
+  <div class="card-ftr">${mlsNumber || '<span></span>'}${viewLink}</div>
+</div>`;
+  }).join('');
+
+  const remaining = filtered.length - visible;
+  document.getElementById('lmBar').style.display = remaining > 0 ? 'flex' : 'none';
+  document.getElementById('lmBtn').textContent = `LOAD MORE (${remaining} more)`;
+  document.getElementById('resCnt').textContent = `${filtered.length.toLocaleString()} result${filtered.length !== 1 ? 's' : ''}`;
+}
+
+function loadMore() { visible += PAGE; renderCards(); }
+
+// ── MAIN GRID SELECTION & EXPORT ──────────────────────
+function onCardCheck(cb, id) {
+  const listing = filtered.find(l => l.id === id);
+  if (cb.checked) {
+    if (listing) gridSelected.set(id, listing);
+    cb.closest('.card')?.classList.add('card-selected');
+  } else {
+    gridSelected.delete(id);
+    cb.closest('.card')?.classList.remove('card-selected');
+  }
+  updateGridSelectBar();
+}
+function updateGridSelectBar() {
+  const n = gridSelected.size;
+  const bar = document.getElementById('gridSelectBar');
+  const cnt = document.getElementById('gridSelCount');
+  if (bar) bar.classList.toggle('active', n > 0);
+  if (cnt) cnt.textContent = n + (n === 1 ? ' SELECTED' : ' SELECTED');
+}
+function clearGridSelection() {
+  gridSelected.clear();
+  document.querySelectorAll('#grid .card-cb').forEach(cb => { cb.checked = false; });
+  document.querySelectorAll('#grid .card.card-selected').forEach(c => c.classList.remove('card-selected'));
+  updateGridSelectBar();
+}
+function exportGridSelected() {
+  if (!gridSelected.size) return;
+  if (typeof XLSX === 'undefined') { alert('Excel library not loaded — please refresh the page and try again.'); return; }
+  const selected = [...gridSelected.values()];
+  const op = currentTab === 'rent' ? 'rent' : 'sale';
+  const tabLabel = op === 'rent' ? 'FOR RENT' : 'FOR SALE';
+  const dateStr = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const btn = document.getElementById('gridExportBtn');
+  if (btn) { btn.textContent = '⏳ Generating...'; btn.disabled = true; }
+  try {
+
+  const fill  = rgb => ({ patternType:'solid', fgColor:{ rgb } });
+  const font  = (rgb, sz, bold, ul) => ({ name:'Arial', color:{ rgb }, sz:sz||10, bold:!!bold, underline:!!ul });
+  const align = (h, v) => ({ horizontal:h||'left', vertical:v||'center' });
+  const bord  = rgb => { const s={style:'thin',color:{rgb}}; return {top:s,bottom:s,left:s,right:s}; };
+
+  const BK='1A1A1A', WH='FFFFFF', RD='CC0000', RDLT='FFF0F0', GY='F7F7F7', BD='D8D8D8';
+
+  const aoa = [];
+  aoa.push([tabLabel + ' — Selected Listings','','','','','','','']); // row 1
+  aoa.push(['The Agency RE Panama  ·  ' + dateStr,'','','','','','','']); // row 2
+  aoa.push(['','','','','','','','']);                                      // row 3 spacer
+  aoa.push(['Name','Neighborhood','Price ($)','Size (m²)','Price / m²','Beds','Baths','Source']); // row 4
+
+  const dataStart = 5;
+  selected.forEach(l => {
+    const price = op === 'rent' ? l.price_rent : l.price_sale;
+    const m2    = parseFloat(l.const_m2) || 0;
+    const ppm2  = (price && m2) ? Math.round(price/m2) : null;
+    aoa.push([
+      l.name || l.building || '—',
+      l.neighborhood || '—',
+      price  || '—',
+      m2     || '—',
+      ppm2   || '—',
+      l.bedrooms  || '—',
+      l.bathrooms || '—',
+      (SOURCES[l.source]||{label:l.source}).label,
+    ]);
+  });
+
+  const ppms = selected.map(l => {
+    const p = op==='rent'?l.price_rent:l.price_sale, m=parseFloat(l.const_m2);
+    return (p&&m) ? p/m : null;
+  }).filter(Boolean);
+  const avgPpm2 = ppms.length ? Math.round(ppms.reduce((a,b)=>a+b,0)/ppms.length) : null;
+  // Always show the average row; show '—' if no m² data available
+  aoa.push(['','','','','','','','']);
+  const avgLabel = ppms.length
+    ? `AVERAGE PRICE / m² (${ppms.length} of ${selected.length} listings)`
+    : `AVERAGE PRICE / m² (no size data available)`;
+  aoa.push([avgLabel,'','','', avgPpm2 || '—','','','']);
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // avgR is always present now (spacer + average row added unconditionally)
+  const avgR = dataStart - 1 + selected.length + 1;
+  ws['!merges'] = [
+    { s:{r:0,c:0}, e:{r:0,c:7} },
+    { s:{r:1,c:0}, e:{r:1,c:7} },
+    { s:{r:2,c:0}, e:{r:2,c:7} },
+    { s:{r:avgR,c:0}, e:{r:avgR,c:3} },
+  ];
+
+  ws['!cols'] = [{wch:42},{wch:18},{wch:15},{wch:11},{wch:13},{wch:7},{wch:8},{wch:20}];
+  ws['!rows'] = [{hpt:30},{hpt:16},{hpt:6},{hpt:20},...selected.map(()=>({hpt:18})),{hpt:6},{hpt:20}];
+
+  const enc = (r,c) => XLSX.utils.encode_cell({r,c});
+
+  // Title row
+  const r0 = ws[enc(0,0)];
+  if(r0){ r0.s = { font:font(WH,15,true), fill:fill(BK), alignment:align('left','center'), border:bord(BK) }; }
+  // Subtitle row
+  const r1 = ws[enc(1,0)];
+  if(r1){ r1.s = { font:{name:'Arial',color:{rgb:'AAAAAA'},sz:9,italic:true}, fill:fill(BK), alignment:align('left','center'), border:bord(BK) }; }
+  // Header row (index 3)
+  for(let c=0;c<8;c++){
+    const cell = ws[enc(3,c)];
+    if(cell) cell.s = { font:font(WH,10,true), fill:fill(RD), alignment:align(c===0?'left':'center','center'), border:bord(RD) };
+  }
+  // Data rows
+  selected.forEach((l, i) => {
+    const r = dataStart - 1 + i;
+    const price = op==='rent' ? l.price_rent : l.price_sale;
+    const m2    = parseFloat(l.const_m2) || 0;
+    const ppm2  = (price && m2) ? Math.round(price/m2) : null;
+    const bg    = i%2===0 ? 'FFFFFF' : GY;
+    for(let c=0;c<8;c++){
+      let cell = ws[enc(r,c)];
+      if(!cell){ ws[enc(r,c)]={v:'',t:'s'}; cell=ws[enc(r,c)]; }
+      cell.s = { font:font(BK,10,false), fill:fill(bg), alignment:align(c===0?'left':'center','center'), border:bord(BD) };
+    }
+    if(price){ const pc=ws[enc(r,2)]; if(pc){pc.z='$#,##0';pc.t='n';pc.v=price;} }
+    if(m2)   { const mc=ws[enc(r,3)]; if(mc){mc.z='#,##0'; mc.t='n';mc.v=m2;  } }
+    if(ppm2) { const sc=ws[enc(r,4)]; if(sc){sc.z='$#,##0';sc.t='n';sc.v=ppm2;} }
+    if(l.link){
+      const nc=ws[enc(r,0)];
+      if(nc){ nc.l={Target:l.link}; nc.s.font=font('0563C1',10,false,true); }
+    }
+  });
+  // Average row — always shown
+  const lbl=ws[enc(avgR,0)];
+  if(lbl){ lbl.s={font:font(RD,10,true),fill:fill(RDLT),alignment:align('left','center'),border:bord(BD)}; }
+  const val=ws[enc(avgR,4)];
+  if(val){
+    val.s={font:font(RD,12,true),fill:fill(RDLT),alignment:align('center','center'),border:bord(BD)};
+    if(avgPpm2){ val.z='$#,##0'; val.t='n'; val.v=avgPpm2; }
+  }
+  for(const c of [1,2,3,5,6,7]){
+    let cell=ws[enc(avgR,c)]; if(!cell){ws[enc(avgR,c)]={v:'',t:'s'};cell=ws[enc(avgR,c)];}
+    cell.s = { fill:fill(RDLT), border:bord(BD) };
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, tabLabel);
+  const fname = 'Listings_' + tabLabel.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
+  XLSX.writeFile(wb, fname, { cellStyles: true });
+  if (btn) { btn.textContent = '⬇ EXPORT TO EXCEL'; btn.disabled = false; }
+  } catch(err) {
+    if (btn) { btn.textContent = '⬇ EXPORT TO EXCEL'; btn.disabled = false; }
+    alert('Export error: ' + err.message);
+    console.error('exportGridSelected error:', err);
+  }
+}
+
+function toggleFeat(id) { document.getElementById(id)?.classList.toggle('active'); applyFilters(); }
+function handleSrcClick() { setTimeout(applyFilters, 0); }
+function showAllSources() {
+  document.querySelectorAll('#srcFilters input[type=checkbox]').forEach(c => c.checked = true);
+  applyFilters();
+}
+function resetFilters() {
+  ['fPMin','fPMax','fBedsMin','fBedsMax','fBathsMin','fBathsMax','fM2Min','fM2Max'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const ft = document.getElementById('fType'); if (ft) ft.value = '';
+  document.querySelectorAll('#srcFilters input[type=checkbox]').forEach(c => c.checked = true);
+  selectedHoods.clear(); renderHoodTags(); filterHoodOpts();
+  ['fFurnished','fOceanView','fCityView'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+  ['searchIn', 'sbSearch'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  applyFilters();
+}
+
+function resetAnalysis() {
+  ['aNhood','aBeds','aBaths','aPropType','aOp'].forEach(id => { const el = document.getElementById(id); if (el) el.value = el.tagName === 'SELECT' ? '' : ''; });
+  ['aM2','aPrice'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const r = document.getElementById('anaResult'); if (r) r.style.display = 'none';
+  if (history.replaceState) history.replaceState(null, '', window.location.pathname + window.location.search);
+}
+
+// ── SHARE ANALYSIS URL ────────────────────────────────
+function shareAnalysis() {
+  const params = {
+    n:  document.getElementById('aNhood')?.value    || '',
+    m:  document.getElementById('aM2')?.value       || '',
+    t:  document.getElementById('aPropType')?.value || '',
+    bd: document.getElementById('aBeds')?.value     || '',
+    bt: document.getElementById('aBaths')?.value    || '',
+    p:  document.getElementById('aPrice')?.value    || '',
+    op: document.getElementById('aOp')?.value       || 'sale',
+  };
+  const hash = Object.entries(params)
+    .filter(([,v]) => v)
+    .map(([k,v]) => k + '=' + encodeURIComponent(v))
+    .join('&');
+  const url = window.location.href.split('#')[0] + '#analysis&' + hash;
+  if (history.replaceState) history.replaceState(null, '', '#analysis&' + hash);
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => showShareToast('🔗 Link copied!'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = url; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showShareToast('🔗 Link copied!');
+  }
+}
+function showShareToast(msg) {
+  const t = document.getElementById('shareToast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+function loadAnalysisFromHash() {
+  const hash = window.location.hash;
+  if (!hash || !hash.includes('analysis')) return;
+  const parts = hash.replace('#','').split('&');
+  if (parts[0] !== 'analysis') return;
+  const params = {};
+  parts.slice(1).forEach(p => {
+    const [k,v] = p.split('=');
+    if (k && v) params[k] = decodeURIComponent(v);
+  });
+  setTab('analysis');
+  const map = { n:'aNhood', m:'aM2', t:'aPropType', bd:'aBeds', bt:'aBaths', p:'aPrice', op:'aOp' };
+  Object.entries(params).forEach(([k,v]) => {
+    const el = document.getElementById(map[k]);
+    if (el) el.value = v;
+  });
+  if (params.n && params.m && params.p) setTimeout(runAnalysis, 200);
+}
+
+// ── PRICE ANALYSIS ────────────────────────────────────
+function runAnalysis() {
+  const neighborhood = document.getElementById('aNhood')?.value;
+  const m2           = parseFloat(document.getElementById('aM2')?.value) || 0;
+  const beds         = document.getElementById('aBeds')?.value || '';
+  const baths        = document.getElementById('aBaths')?.value || '';
+  const propType     = document.getElementById('aPropType')?.value || '';
+  const operation    = document.getElementById('aOp')?.value || 'sale';
+  const userPrice    = parseFloat(document.getElementById('aPrice')?.value) || 0;
+
+  if (!neighborhood || !m2 || !userPrice) { alert('Please fill in Neighborhood, Size and Asking Price.'); return; }
+
+  const bedsMatch = (l, bv) => {
+    if (!bv) return true;
+    const b = parseInt(l.bedrooms) || 0;
+    if (bv === '5') return b >= 5;
+    return b === parseInt(bv);
+  };
+  const bathsMatch = (l, bv) => {
+    if (!bv) return true;
+    const b = parseFloat(l.bathrooms) || 0;
+    if (bv === '4') return b >= 4;
+    return Math.abs(b - parseFloat(bv)) < 0.3;
+  };
+  const typeMatch = (l, tv) => !tv || (l.type && l.type.toLowerCase() === tv.toLowerCase());
+
+  const baseFilter = l => {
+    if (l._isDupe) return false;
+    if (!l.operation || !l.operation.includes(operation)) return false;
+    const p = operation === 'rent' ? l.price_rent : l.price_sale;
+    if (!p) return false;
+    const size = parseFloat(l.const_m2) || 0; if (!size) return false;
+    if (!bedsMatch(l, beds)) return false;
+    if (!bathsMatch(l, baths)) return false;
+    if (!typeMatch(l, propType)) return false;
+    return true;
+  };
+
+  let comparables = [], expandScope = '';
+  anaOperation = operation;
+
+  // Attempt 1: same neighborhood, ±40% size
+  comparables = ALL_DATA.filter(l => {
+    const size = parseFloat(l.const_m2) || 0;
+    return baseFilter(l) && l.neighborhood === neighborhood && size >= m2 * 0.6 && size <= m2 * 1.4;
+  });
+
+  // Attempt 2: expand to district, ±50% size
+  if (comparables.length < 3) {
+    const districts = [...new Set(ALL_DATA.filter(l => l.neighborhood === neighborhood).map(l => l.district).filter(Boolean))];
+    comparables = ALL_DATA.filter(l => {
+      const size = parseFloat(l.const_m2) || 0;
+      return baseFilter(l) && districts.includes(l.district) && size >= m2 * 0.5 && size <= m2 * 1.5;
+    });
+    if (comparables.length >= 3) expandScope = districts.join(', ') || 'district';
+  }
+
+  // Attempt 3: district + any bedrooms/bathrooms
+  if (comparables.length < 3) {
+    const districts = [...new Set(ALL_DATA.filter(l => l.neighborhood === neighborhood).map(l => l.district).filter(Boolean))];
+    comparables = ALL_DATA.filter(l => {
+      if (l._isDupe) return false;
+      if (!l.operation || !l.operation.includes(operation)) return false;
+      const p = operation === 'rent' ? l.price_rent : l.price_sale; if (!p) return false;
+      const size = parseFloat(l.const_m2) || 0; if (!size) return false;
+      if (!typeMatch(l, propType)) return false;
+      return districts.includes(l.district) && size >= m2 * 0.5 && size <= m2 * 1.5;
+    });
+    if (comparables.length >= 3) expandScope = (districts.join(', ') || '') + ' · any bedrooms';
+  }
+
+  const prices = comparables.map(l => operation === 'rent' ? l.price_rent : l.price_sale).filter(Boolean);
+  if (!prices.length) { alert('Not enough comparable data for this area. Try removing some filters.'); return; }
+
+  const avgPrice = Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
+  const minPrice = Math.min(...prices), maxPrice = Math.max(...prices);
+  const ratio    = userPrice / avgPrice;
+  // Position pin based on ratio vs average (not vs outlier-distorted min/max range)
+  // ratio 0.70 → 5%  |  1.00 → 50%  |  1.30 → 95%
+  const pinPos   = Math.max(3, Math.min(97, ((ratio - 0.70) / 0.60) * 90 + 5));
+
+  let icon, color, title, summary;
+  if (ratio < 0.85)       { icon='🟢'; color='#16a34a'; title='Below Market Price';    summary=`Your price is ${Math.round((1-ratio)*100)}% below average. Very competitive.`; }
+  else if (ratio <= 1.10) { icon='🟡'; color='#d97706'; title='At Market Rate';         summary='Your price is within 10% of the market average.'; }
+  else if (ratio <= 1.25) { icon='🟠'; color='#ea580c'; title='Slightly Above Market'; summary=`Your price is ${Math.round((ratio-1)*100)}% above average.`; }
+  else                    { icon='🔴'; color='#dc2626'; title='Above Market Price';     summary=`Your price is ${Math.round((ratio-1)*100)}% above average. May be hard to sell.`; }
+  if (expandScope) summary += ` (Expanded to: ${expandScope})`;
+
+  const resultEl = document.getElementById('anaResult');
+  if (!resultEl) return;
+  resultEl.style.display = 'block';
+
+  document.getElementById('verdict').innerHTML = `
+    <div style="font-size:32px;margin-bottom:8px">${icon}</div>
+    <div style="font-family:var(--font-serif);font-size:20px;font-weight:600;color:${color};margin-bottom:6px">${title}</div>
+    <div style="font-size:13px;color:var(--text-muted);line-height:1.6">${summary}</div>`;
+
+  document.getElementById('gaugePin').style.left = pinPos + '%';
+
+  document.getElementById('rangeGrid').innerHTML = `
+    <div class="range-box"><div class="rv">${fmtFull(avgPrice)}</div><div class="rl">AVG PRICE</div></div>
+    <div class="range-box"><div class="rv">${fmtFull(minPrice)}</div><div class="rl">MIN PRICE</div></div>
+    <div class="range-box"><div class="rv">${fmtFull(maxPrice)}</div><div class="rl">MAX PRICE</div></div>
+    <div class="range-box"><div class="rv">${comparables.length}</div><div class="rl">COMPARABLES</div></div>`;
+
+  anaComparables = comparables;
+  const compLabel = document.getElementById('compSecLbl');
+  if (compLabel) compLabel.textContent = `COMPARABLE LISTINGS (${comparables.length})`;
+
+  // Render selection bar
+  const compBar = document.getElementById('compBar');
+  if (compBar) {
+    compBar.style.display = 'flex';
+    document.getElementById('compSelCount').textContent = '0 selected';
+  }
+  const compExportBar = document.getElementById('compExportBar');
+  if (compExportBar) compExportBar.style.display = 'none';
+
+  document.getElementById('compGrid').innerHTML = comparables.map((l, idx) => {
+    const compPrice = operation === 'rent' ? l.price_rent : l.price_sale;
+    const compSrc   = SOURCES[l.source] || { bg:'#eee', text:'#444', label: l.source };
+    const specs = [
+      l.bedrooms  ? l.bedrooms + ' bd'                          : null,
+      l.bathrooms ? l.bathrooms + ' ba'                         : null,
+      l.const_m2  ? Math.round(parseFloat(l.const_m2)) + ' m²' : null,
+      l.parking   ? '🅿 ' + l.parking                          : null,
+      l.neighborhood
+    ].filter(Boolean).join(' · ');
+    return `<div class="comp-card" data-idx="${idx}" onclick="toggleCompCard(this,event,${idx},'${(l.link||'').replace(/'/g,"\\'")}')">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="checkbox" class="comp-checkbox" onclick="event.stopPropagation()" onchange="this.closest('.comp-card').classList.toggle('selected',this.checked);onCompCheck()">
+          <span class="sbadge" style="background:${compSrc.bg};color:${compSrc.text}">${compSrc.label}</span>
+        </div>
+        <strong style="font-family:var(--font-serif);font-size:14px">${fmtFull(compPrice)}</strong>
+      </div>
+      <div style="font-size:11.5px;font-weight:500">${l.name || l.building || l.address || '—'}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:3px">${specs}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── COMPARABLE SELECTION & EXPORT ────────────────────
+function toggleCompCard(card, event, idx, link) {
+  if (event.target.type === 'checkbox') return;
+  if (link) window.open(link, '_blank');
+}
+function onCompCheck() {
+  const cards = document.querySelectorAll('#compGrid .comp-card');
+  const checked = [...cards].filter(c => c.querySelector('.comp-checkbox')?.checked);
+  const n = checked.length;
+  document.getElementById('compSelCount').textContent = n + ' selected';
+  const bar = document.getElementById('compExportBar');
+  if (bar) bar.style.display = n > 0 ? 'block' : 'none';
+  const all = document.getElementById('compSelectAll');
+  if (all) { all.indeterminate = n > 0 && n < cards.length; all.checked = n === cards.length; }
+}
+function toggleSelectAll(allCb) {
+  document.querySelectorAll('#compGrid .comp-card').forEach(card => {
+    const cb = card.querySelector('.comp-checkbox');
+    cb.checked = allCb.checked;
+    card.classList.toggle('selected', allCb.checked);
+  });
+  onCompCheck();
+}
+function exportComps() {
+  const cards = [...document.querySelectorAll('#compGrid .comp-card')].filter(c => c.querySelector('.comp-checkbox')?.checked);
+  if (!cards.length) return;
+  if (typeof XLSX === 'undefined') { alert('Excel library not loaded — please refresh the page and try again.'); return; }
+  const btn = document.getElementById('compExportBtn');
+  if (btn) { btn.textContent = '⏳ Generating...'; btn.disabled = true; }
+  try {
+
+  const selected = cards.map(c => anaComparables[parseInt(c.dataset.idx)]).filter(Boolean);
+  const neighborhood = document.getElementById('aNhood')?.value || 'Panama';
+  const dateStr = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+
+  // ── Style helpers ────────────────────────────────────
+  const fill  = rgb => ({ patternType:'solid', fgColor:{ rgb } });
+  const font  = (rgb, sz, bold, ul) => ({ name:'Arial', color:{ rgb }, sz: sz||10, bold:!!bold, underline:!!ul });
+  const align = (h, v, wrap) => ({ horizontal:h||'left', vertical:v||'center', wrapText:!!wrap });
+  const bord  = rgb => { const s = { style:'thin', color:{ rgb } }; return { top:s, bottom:s, left:s, right:s }; };
+
+  const BK='1A1A1A', WH='FFFFFF', RD='CC0000', RDLT='FFF0F0', GY='F7F7F7', BD='D8D8D8';
+
+  // ── Build rows array ─────────────────────────────────
+  // Row 1: title (will style cell A1)
+  // Row 2: subtitle
+  // Row 3: empty spacer
+  // Row 4: headers
+  // Rows 5+: data
+  // Last rows: empty + average
+  const aoa = [];
+  aoa.push([neighborhood + ' — Comparable Listings','','','','','','','']); // row 1
+  aoa.push(['The Agency RE Panama  ·  ' + dateStr,'','','','','','','']);   // row 2
+  aoa.push(['','','','','','','','']);                                       // row 3 spacer
+  aoa.push(['Name','Neighborhood','Price ($)','Size (m²)','Price / m²','Beds','Baths','Source']); // row 4
+
+  const dataStart = 5; // 1-indexed
+  selected.forEach(l => {
+    const price = anaOperation==='rent' ? l.price_rent : l.price_sale;
+    const m2    = parseFloat(l.const_m2) || 0;
+    const ppm2  = (price && m2) ? Math.round(price/m2) : '';
+    aoa.push([
+      l.name || l.building || '—',
+      l.neighborhood || '—',
+      price || '',
+      m2    || '',
+      ppm2,
+      l.bedrooms  || '',
+      l.bathrooms || '',
+      (SOURCES[l.source]||{label:l.source}).label,
+    ]);
+  });
+
+  const ppms = selected.map(l => { const p=anaOperation==='rent'?l.price_rent:l.price_sale, m=parseFloat(l.const_m2); return (p&&m)?p/m:null; }).filter(Boolean);
+  const avgPpm2 = ppms.length ? Math.round(ppms.reduce((a,b)=>a+b,0)/ppms.length) : null;
+  if (avgPpm2) {
+    aoa.push(['','','','','','','','']);  // spacer
+    aoa.push(['AVERAGE PRICE / m²','','','', avgPpm2 ,'','','']);
+  }
+
+  // ── Create worksheet ─────────────────────────────────
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // Merges: A1:H1, A2:H2, A3:H3
+  ws['!merges'] = [
+    { s:{r:0,c:0}, e:{r:0,c:7} },
+    { s:{r:1,c:0}, e:{r:1,c:7} },
+    { s:{r:2,c:0}, e:{r:2,c:7} },
+  ];
+  if (avgPpm2) {
+    const avgR = dataStart - 1 + selected.length + 1; // 0-indexed
+    ws['!merges'].push({ s:{r:avgR,c:0}, e:{r:avgR,c:3} });
+  }
+
+  // Column widths
+  ws['!cols'] = [{wch:38},{wch:18},{wch:15},{wch:11},{wch:13},{wch:7},{wch:8},{wch:20}];
+  // Row heights
+  ws['!rows'] = [
+    {hpt:30}, // title
+    {hpt:16}, // subtitle
+    {hpt:6},  // spacer
+    {hpt:20}, // headers
+    ...selected.map(()=>({hpt:18})),
+  ];
+
+  // ── Apply cell styles ────────────────────────────────
+  const enc = (r,c) => XLSX.utils.encode_cell({r,c});
+
+  // Title row (row 0)
+  const r0 = ws[enc(0,0)];
+  if(r0){ r0.s = { font:font(WH,15,true), fill:fill(BK), alignment:align('left','center'), border:bord(BK) }; }
+
+  // Subtitle row (row 1)
+  const r1 = ws[enc(1,0)];
+  if(r1){ r1.s = { font:{name:'Arial',color:{rgb:'AAAAAA'},sz:9,italic:true}, fill:fill(BK), alignment:align('left','center'), border:bord(BK) }; }
+
+  // Header row (row 3)
+  for(let c=0;c<8;c++){
+    const cell = ws[enc(3,c)];
+    if(cell) cell.s = {
+      font: font(WH,10,true),
+      fill: fill(RD),
+      alignment: align(c===0?'left':'center','center'),
+      border: bord(RD),
+    };
+  }
+
+  // Data rows
+  selected.forEach((l, i) => {
+    const r = dataStart - 1 + i; // 0-indexed
+    const price = anaOperation==='rent' ? l.price_rent : l.price_sale;
+    const m2    = parseFloat(l.const_m2) || 0;
+    const ppm2  = (price && m2) ? Math.round(price/m2) : null;
+    const bg    = i%2===0 ? 'FFFFFF' : GY;
+    for(let c=0;c<8;c++){
+      let cell = ws[enc(r,c)];
+      if(!cell){ ws[enc(r,c)] = {v:'',t:'s'}; cell = ws[enc(r,c)]; }
+      cell.s = {
+        font: font(BK, 10, false),
+        fill: fill(bg),
+        alignment: align(c===0?'left':'center','center'),
+        border: bord(BD),
+      };
+    }
+    // Price format
+    if(price){ const pc=ws[enc(r,2)]; if(pc){ pc.z='$#,##0'; pc.t='n'; pc.v=price; } }
+    if(m2)   { const mc=ws[enc(r,3)]; if(mc){ mc.z='#,##0';  mc.t='n'; mc.v=m2;   } }
+    if(ppm2) { const sc=ws[enc(r,4)]; if(sc){ sc.z='$#,##0'; sc.t='n'; sc.v=ppm2; } }
+    // Hyperlink + blue underline on Name
+    if(l.link){
+      const nc = ws[enc(r,0)];
+      if(nc){ nc.l = { Target: l.link }; nc.s.font = font('0563C1',10,false,true); }
+    }
+  });
+
+  // Average row
+  if(avgPpm2){
+    const avgR = dataStart - 1 + selected.length + 1; // 0-indexed (skip spacer row)
+    const lbl = ws[enc(avgR,0)];
+    if(lbl){ lbl.s = { font:font(RD,10,true), fill:fill(RDLT), alignment:align('left','center'), border:bord(BD) }; }
+    const val = ws[enc(avgR,4)];
+    if(val){ val.s = { font:font(RD,12,true), fill:fill(RDLT), alignment:align('center','center'), border:bord(BD) }; val.z='$#,##0'; val.t='n'; val.v=avgPpm2; }
+    for(const c of [1,2,3,5,6,7]){
+      let cell=ws[enc(avgR,c)]; if(!cell){ws[enc(avgR,c)]={v:'',t:'s'};cell=ws[enc(avgR,c)];}
+      cell.s = { fill:fill(RDLT), border:bord(BD) };
+    }
+  }
+
+  // ── Download ─────────────────────────────────────────
+  XLSX.utils.book_append_sheet(wb, ws, 'Comparables');
+  const fname = 'Comparables_' + neighborhood.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
+  XLSX.writeFile(wb, fname, { cellStyles: true });
+  if (btn) { btn.textContent = '⬇ EXPORT SELECTED TO EXCEL'; btn.disabled = false; }
+  } catch(err) {
+    if (btn) { btn.textContent = '⬇ EXPORT SELECTED TO EXCEL'; btn.disabled = false; }
+    alert('Export error: ' + err.message);
+    console.error('exportComps error:', err);
+  }
+}
+
+
+// ── INIT ──────────────────────────────────────────────
+// Use both events for maximum mobile compatibility — initDone flag prevents double call
+let initDone = false;
+function safeInit() { if (!initDone) { initDone = true; init(); } }
+document.addEventListener('DOMContentLoaded', safeInit);
+window.addEventListener('load', safeInit);
+
+</script>
+</body>
+</html>
