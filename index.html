@@ -328,7 +328,7 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
     <div class="top-title-row">
       <div class="top-title-left">
         <div class="top-title" data-en="ReVa — Panama Market" data-es="ReVa — Mercado Panamá">ReVa — Panama Market</div>
-        <div class="top-breadcrumb">REAL-TIME DATA · 6 SOURCES · <span class="bc-active" id="updTxt">UPDATED: MAY 2026</span></div>
+        <div class="top-breadcrumb">REAL-TIME DATA · <span id="nSrcTxt">7</span> SOURCES · <span class="bc-active" id="updTxt">UPDATED: MAY 2026</span></div>
       </div>
       <div class="stats-inline">
         <div class="si"><span class="si-val" id="s-total">—</span><span class="si-lbl">LISTINGS</span></div>
@@ -431,6 +431,7 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
     <div class="fg">
       <label data-en="SOURCE" data-es="FUENTE">SOURCE</label>
       <div class="src-filters" id="srcFilters"></div>
+      <div id="dupToggle"></div>
     </div>
     <button class="btn-reset" onclick="resetFilters()" data-en="RESET ALL FILTERS" data-es="REINICIAR FILTROS">RESET ALL FILTERS</button>
   </aside>
@@ -572,6 +573,8 @@ const SOURCES = {
   'PANEQ':     { label:'Panama Equity',    color:'#0891B2', bg:'#ECFEFF', text:'#0e7490' },
   'SOVEREIGN': { label:'Panama Sovereign', color:'#047857', bg:'#ECFDF5', text:'#065f46' },
   'PUNTAPAC':  { label:'Punta Pacifica',   color:'#0e7490', bg:'#f0f9ff', text:'#0369a1' },
+  'JAMESEDITION': { label:'JamesEdition',  color:'#111827', bg:'#F3F4F6', text:'#111827' },
+  'CASASOL':   { label:'Casa Solution',    color:'#B45309', bg:'#FFFBEB', text:'#92400e' },
 };
 
 let currentTab = 'sale', currentLang = 'en', filtered = [], visible = 24;
@@ -821,6 +824,18 @@ function init() {
           <span class="src-cnt">${count}</span>
         </label>`;
       });
+      // Listings that also appear on a source we scrape directly are tagged `duplicate` by consolidate.py
+      const dupDiv = document.getElementById('dupToggle');
+      const dupCount = ALL_DATA.filter(l => l.duplicate).length;
+      if (dupDiv && dupCount) {
+        dupDiv.innerHTML = `<label class="src-cb" style="margin-top:8px" onclick="handleSrcClick()">
+          <input type="checkbox" id="hideDup">
+          <span class="src-lbl">Hide duplicates</span>
+          <span class="src-cnt">${dupCount}</span>
+        </label>`;
+      }
+      const nSrc = document.getElementById('nSrcTxt');
+      if (nSrc) nSrc.textContent = Object.keys(counts).length;
     }
 
     const ut = document.getElementById('updTxt');
@@ -861,6 +876,7 @@ function applyFilters() {
   const m2Max    = parseFloat(document.getElementById('fM2Max')?.value) || Infinity;
   const typeFilter = (document.getElementById('fType')?.value || '').toLowerCase();
   const activeSources = new Set([...document.querySelectorAll('#srcFilters input[type=checkbox]:checked')].map(c => c.value));
+  const hideDup = !!document.getElementById('hideDup')?.checked;
   const sortMode = document.getElementById('sortSel')?.value || 'price_asc';
   const wantFurnished = document.getElementById('fFurnished')?.classList.contains('active');
   const wantOceanView = document.getElementById('fOceanView')?.classList.contains('active');
@@ -895,6 +911,7 @@ function applyFilters() {
     }
     // Property type
     if (typeFilter && listing.type && listing.type.toLowerCase() !== typeFilter) return false;
+    if (hideDup && listing.duplicate) return false;
     // Source — only filter if a checkbox exists for this source
     const hasCb = document.querySelector(`#srcFilters input[value="${listing.source}"]`);
     if (hasCb && !activeSources.has(listing.source)) return false;
@@ -1238,6 +1255,7 @@ function resetFilters() {
   });
   const ft = document.getElementById('fType'); if (ft) ft.value = '';
   document.querySelectorAll('#srcFilters input[type=checkbox]').forEach(c => c.checked = true);
+  const hd = document.getElementById('hideDup'); if (hd) hd.checked = false;
   selectedHoods.clear(); renderHoodTags(); filterHoodOpts();
   ['fFurnished','fOceanView','fCityView'].forEach(id => document.getElementById(id)?.classList.remove('active'));
   ['searchIn', 'sbSearch'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
