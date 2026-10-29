@@ -277,6 +277,28 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
   .logo-text .t2{display:none;}
 }
 
+/* ── ALERTS ── */
+.alert-btn{display:none;align-items:center;gap:6px;padding:9px 14px;border:1px solid var(--red);background:var(--white);color:var(--red);border-radius:var(--radius);font-family:var(--font-sans);font-size:10.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:all .15s;}
+.alert-btn:hover{background:var(--red);color:var(--white);}
+.al-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:900;align-items:center;justify-content:center;padding:16px;}
+.al-overlay.open{display:flex;}
+.al-modal{background:var(--white);border-radius:10px;width:100%;max-width:440px;max-height:92vh;overflow-y:auto;padding:22px 22px 18px;box-shadow:0 20px 60px rgba(0,0,0,.35);}
+.al-eyebrow{font-size:9.5px;font-weight:700;letter-spacing:3px;color:var(--red);text-transform:uppercase;}
+.al-title{font-family:var(--font-serif);font-size:24px;font-weight:500;margin:4px 0 12px;}
+.al-sum{background:var(--cream);border-radius:6px;padding:11px 13px;font-size:13px;font-weight:600;line-height:1.5;margin-bottom:14px;}
+.al-lbl{display:block;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin:12px 0 6px;}
+.al-modal select{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:15px;font-family:var(--font-sans);background:var(--cream);}
+.al-chk{display:flex;align-items:center;gap:9px;padding:7px 0;font-size:14px;cursor:pointer;}
+.al-chk input{width:18px;height:18px;accent-color:var(--red);}
+.al-note{font-size:12px;color:var(--text-muted);line-height:1.5;margin-top:10px;}
+.al-msg{font-size:13px;margin-top:10px;min-height:18px;}
+.al-msg.err{color:#b91c1c;}.al-msg.ok{color:#15803d;font-weight:600;}
+.al-row{display:flex;gap:10px;margin-top:14px;}
+.al-go{flex:1;min-height:46px;background:var(--red);color:#fff;border:none;border-radius:var(--radius);font-weight:700;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;}
+.al-go:disabled{opacity:.55;cursor:default;}
+.al-cancel{min-height:46px;padding:0 18px;background:transparent;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;cursor:pointer;color:var(--text-muted);}
+@media(max-width:768px){.alert-btn{width:100%;justify-content:center;min-height:44px;font-size:12px;}.al-overlay{align-items:flex-end;padding:0;}.al-modal{border-radius:14px 14px 0 0;max-width:none;padding-bottom:calc(18px + env(safe-area-inset-bottom));}}
+
 /* ── MOBILE (≤768px) — rebuilt for the two-panel header ── */
 .sb-mob-head,.sb-apply-bar{display:none;}
 @media(max-width:768px){
@@ -455,6 +477,26 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
   </div>
 </div>
 
+<!-- Alert modal -->
+<div class="al-overlay" id="alOverlay" onclick="if(event.target===this)closeAlertModal()">
+  <div class="al-modal" role="dialog" aria-modal="true">
+    <div class="al-eyebrow">🔔 <span data-en="LISTING ALERT" data-es="ALERTA DE PROPIEDADES">LISTING ALERT</span></div>
+    <div class="al-title" data-en="Get an email when something new matches" data-es="Recibe un correo cuando haya algo nuevo">Get an email when something new matches</div>
+    <div class="al-sum" id="alSum"></div>
+    <label class="al-lbl" data-en="WHO IS THIS FOR" data-es="PARA QUIÉN">WHO IS THIS FOR</label>
+    <select id="alAgent"><option value="">…</option></select>
+    <label class="al-lbl" data-en="NOTIFY ME ABOUT" data-es="AVISARME DE">NOTIFY ME ABOUT</label>
+    <label class="al-chk"><input type="checkbox" id="alNew" checked> <span data-en="New listings" data-es="Propiedades nuevas">New listings</span></label>
+    <label class="al-chk"><input type="checkbox" id="alDrop" checked> <span data-en="Price drops" data-es="Bajas de precio">Price drops</span></label>
+    <div class="al-note" data-en="Checked after each ReVa update (about twice a day). The alert lasts 60 days; every email has a link to delete or renew it." data-es="Se revisa después de cada actualización de ReVa (unas 2 veces al día). La alerta dura 60 días; cada correo trae un enlace para eliminarla o renovarla.">Checked after each ReVa update (about twice a day). The alert lasts 60 days; every email has a link to delete or renew it.</div>
+    <div class="al-msg" id="alMsg"></div>
+    <div class="al-row">
+      <button class="al-cancel" onclick="closeAlertModal()" data-en="Close" data-es="Cerrar">Close</button>
+      <button class="al-go" id="alGo" onclick="submitAlert()" data-en="CREATE ALERT" data-es="CREAR ALERTA">CREATE ALERT</button>
+    </div>
+  </div>
+</div>
+
 <!-- Mobile sidebar toggle -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileSidebar()"></div>
 <button class="mob-filter-btn" onclick="toggleMobileSidebar()" aria-label="Filters">⚙ <span data-en="FILTERS" data-es="FILTROS">FILTERS</span></button>
@@ -557,6 +599,7 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
           <option value="price_drop" data-en="▼ Price drops first" data-es="▼ Baja de precio">▼ Price drops first</option>
         </select>
         <span class="res-count" id="resCnt"></span>
+        <button class="alert-btn" id="alertBtn" onclick="openAlertModal()">🔔 <span data-en="CREATE ALERT" data-es="CREAR ALERTA">CREATE ALERT</span></button>
       </div>
       <!-- Selection bar (appears when cards are checked) -->
       <div class="grid-select-bar" id="gridSelectBar">
@@ -773,6 +816,102 @@ function toggleHood(h) {
   selectedHoods.has(h) ? selectedHoods.delete(h) : selectedHoods.add(h);
   renderHoodTags(); filterHoodOpts(); applyFilters();
 }
+
+
+// ── LISTING ALERTS ────────────────────────────────────
+// Alerts are stored by a Google Apps Script relay; the nightly pipeline matches new listings and mails the agent.
+// Leave ALERTS_URL empty to hide the feature. (A ?alertsApi=… override is honoured on localhost only, for testing.)
+const ALERTS_URL = (['localhost','127.0.0.1'].includes(location.hostname) && new URLSearchParams(location.search).get('alertsApi')) ||
+  'https://script.google.com/macros/s/AKfycbyZrfpRHPgx-y1OEPzHqyi_VUk7fyB9NgdvrI8Wl7PuUERA5KrgzG3ltbhamTc1YUAi/exec';
+const AL = {
+  en: { sale:'For sale', rent:'For rent', bd:'bd', upto:'up to', from:'from', pick:'Choose your name…', need:'Add at least one filter first (neighborhood, price, bedrooms…).',
+        agent:'Choose who this alert is for.', sending:'Creating…', ok:'✓ Alert created — check your inbox for the confirmation.', fail:'Could not create the alert. Try again in a moment.',
+        many:'You already have the maximum number of active alerts.', load:'Could not load the list of agents.' },
+  es: { sale:'En venta', rent:'En alquiler', bd:'hab', upto:'hasta', from:'desde', pick:'Elige tu nombre…', need:'Primero agrega al menos un filtro (barrio, precio, habitaciones…).',
+        agent:'Elige para quién es la alerta.', sending:'Creando…', ok:'✓ Alerta creada — revisa tu correo para la confirmación.', fail:'No se pudo crear la alerta. Inténtalo de nuevo en un momento.',
+        many:'Ya tienes el máximo de alertas activas.', load:'No se pudo cargar la lista de agentes.' },
+};
+function alertCriteria() {
+  const v = id => (document.getElementById(id)?.value || '').trim();
+  const num = id => { const x = parseFloat(v(id)); return isFinite(x) && x > 0 ? x : 0; };
+  const on = id => !!document.getElementById(id)?.classList.contains('active');
+  return {
+    op: currentTab === 'rent' ? 'rent' : 'sale',
+    hoods: [...selectedHoods],
+    type: v('fType'),
+    pmin: num('fPMin'), pmax: num('fPMax'),
+    bmin: num('fBedsMin'), bmax: num('fBedsMax'),
+    bathmin: num('fBathsMin'), bathmax: num('fBathsMax'),
+    m2min: num('fM2Min'), m2max: num('fM2Max'),
+    furnished: on('fFurnished'), ocean: on('fOceanView'), city: on('fCityView'),
+    q: (document.getElementById('searchIn')?.value || document.getElementById('sbSearch')?.value || '').trim(),
+  };
+}
+function alertHasFilter(c) {
+  return !!(c.hoods.length || c.type || c.pmin || c.pmax || c.bmin || c.bmax || c.bathmin || c.bathmax ||
+            c.m2min || c.m2max || c.furnished || c.ocean || c.city || c.q);
+}
+function alertSummary(c) {
+  const t = AL[currentLang] || AL.en, k = n => n >= 1e6 ? '$' + (n / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M' : '$' + Math.round(n).toLocaleString('en-US');
+  const p = [c.op === 'rent' ? t.rent : t.sale];
+  if (c.hoods.length) p.push(c.hoods.slice(0, 3).join(', ') + (c.hoods.length > 3 ? '…' : ''));
+  if (c.type) p.push(c.type);
+  if (c.bmin || c.bmax) p.push(c.bmin && c.bmax ? `${c.bmin}–${c.bmax} ${t.bd}` : c.bmin ? `${c.bmin}+ ${t.bd}` : `≤${c.bmax} ${t.bd}`);
+  if (c.bathmin) p.push(`${c.bathmin}+ ba`);
+  if (c.pmin || c.pmax) p.push(c.pmin && c.pmax ? `${k(c.pmin)}–${k(c.pmax)}` : c.pmin ? `${t.from} ${k(c.pmin)}` : `${t.upto} ${k(c.pmax)}`);
+  if (c.m2min || c.m2max) p.push(c.m2min && c.m2max ? `${c.m2min}–${c.m2max} m²` : c.m2min ? `${c.m2min}+ m²` : `≤${c.m2max} m²`);
+  if (c.furnished) p.push('🛋'); if (c.ocean) p.push('🌊'); if (c.city) p.push('🏙');
+  if (c.q) p.push('“' + c.q + '”');
+  return p.join(' · ');
+}
+async function loadAlertAgents() {
+  const sel = document.getElementById('alAgent'), t = AL[currentLang] || AL.en;
+  let names = null;
+  try { names = JSON.parse(sessionStorage.getItem('al_agents') || 'null'); } catch (e) {}
+  if (!names) {
+    try {
+      const r = await fetch(ALERTS_URL + (ALERTS_URL.includes('?') ? '&' : '?') + 'action=agents');
+      const j = await r.json();
+      if (j.ok) { names = j.agents; try { sessionStorage.setItem('al_agents', JSON.stringify(names)); } catch (e) {} }
+    } catch (e) {}
+  }
+  if (!names) { document.getElementById('alMsg').className = 'al-msg err'; document.getElementById('alMsg').textContent = t.load; return; }
+  let last = ''; try { last = localStorage.getItem('al_agent') || ''; } catch (e) {}
+  sel.innerHTML = `<option value="">${t.pick}</option>` + names.map(n => `<option ${n === last ? 'selected' : ''}>${n.replace(/</g, '&lt;')}</option>`).join('');
+}
+function openAlertModal() {
+  const t = AL[currentLang] || AL.en, c = alertCriteria(), msg = document.getElementById('alMsg');
+  document.getElementById('alSum').textContent = alertSummary(c);
+  msg.className = 'al-msg'; msg.textContent = '';
+  document.getElementById('alGo').disabled = false;
+  if (!alertHasFilter(c)) { msg.className = 'al-msg err'; msg.textContent = t.need; document.getElementById('alGo').disabled = true; }
+  document.getElementById('alOverlay').classList.add('open');
+  closeMobileSidebar();
+  loadAlertAgents();
+}
+function closeAlertModal() { document.getElementById('alOverlay').classList.remove('open'); }
+async function submitAlert() {
+  const t = AL[currentLang] || AL.en, msg = document.getElementById('alMsg'), btn = document.getElementById('alGo');
+  const agent = document.getElementById('alAgent').value, c = alertCriteria();
+  if (!agent) { msg.className = 'al-msg err'; msg.textContent = t.agent; return; }
+  if (!alertHasFilter(c)) { msg.className = 'al-msg err'; msg.textContent = t.need; return; }
+  btn.disabled = true; msg.className = 'al-msg'; msg.textContent = t.sending;
+  try {
+    const r = await fetch(ALERTS_URL, { method: 'POST', body: JSON.stringify({
+      action: 'create', agent, criteria: c, lang: currentLang, summary: alertSummary(c),
+      events: { new: document.getElementById('alNew').checked, drop: document.getElementById('alDrop').checked } }) });
+    const j = await r.json();
+    if (j.ok) {
+      try { localStorage.setItem('al_agent', agent); } catch (e) {}
+      msg.className = 'al-msg ok'; msg.textContent = t.ok;
+      setTimeout(closeAlertModal, 2600);
+    } else {
+      msg.className = 'al-msg err'; msg.textContent = j.error === 'too many alerts' ? t.many : t.fail; btn.disabled = false;
+    }
+  } catch (e) { msg.className = 'al-msg err'; msg.textContent = t.fail; btn.disabled = false; }
+}
+if (ALERTS_URL) document.addEventListener('DOMContentLoaded', () => { const b = document.getElementById('alertBtn'); if (b) b.style.display = 'inline-flex'; });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAlertModal(); });
 
 // ── OPEN MULTIPLE LINKS ───────────────────────────────
 function openAllLinks(e, urls) {
