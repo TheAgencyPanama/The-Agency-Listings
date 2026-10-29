@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
 <title>The Agency RE — Panama Market Dashboard</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
@@ -124,7 +125,7 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
 .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(288px,1fr));gap:14px;}
 
 /* ── CARD ── */
-.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:box-shadow .2s,transform .2s;cursor:default;display:flex;flex-direction:column;}
+.card{position:relative;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:box-shadow .2s,transform .2s;cursor:default;display:flex;flex-direction:column;}
 .card.has-link{cursor:pointer;}
 .card:hover{box-shadow:var(--shadow-hover);transform:translateY(-2px);}
 .card-excl{border-color:var(--red);border-width:2px;}
@@ -140,6 +141,9 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
 .card-id{font-family:var(--font-sans);font-size:9.5px;color:var(--text-muted);letter-spacing:.5px;}
 .card-link{font-family:var(--font-sans);font-size:10px;font-weight:700;color:var(--red);text-decoration:none;letter-spacing:1px;display:flex;align-items:center;gap:3px;text-transform:uppercase;transition:color .18s;}
 .card-link:hover{color:var(--red-dark);}
+/* whole card is one real <a> (stretched link): works on touch, in in-app browsers and with long-press */
+.card-link::after{content:"";position:absolute;inset:0;z-index:1;}
+.card-cb,.alt-badge,.card-alts{position:relative;z-index:2;}
 
 /* ── BADGES ── */
 .sbadge{font-family:var(--font-sans);font-size:9px;font-weight:700;letter-spacing:.5px;padding:3px 7px;border-radius:3px;white-space:nowrap;flex-shrink:0;text-transform:uppercase;}
@@ -272,6 +276,101 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
   .search-wrap input{font-size:14px;}
   .logo-text .t2{display:none;}
 }
+
+/* ── MOBILE (≤768px) — rebuilt for the two-panel header ── */
+.sb-mob-head,.sb-apply-bar{display:none;}
+@media(max-width:768px){
+  html{-webkit-text-size-adjust:100%;}
+  body{overflow-x:hidden;}
+  /* header: compact brand strip + title + stats; only the tab strip stays pinned */
+  .top-bar{flex-direction:column;top:var(--hdr-collapse,0px);}
+  .top-left{width:100%;min-width:0;flex-direction:row;align-items:center;gap:10px;padding:8px 14px;}
+  .logo-mark{width:30px;height:30px;font-size:12px;margin-bottom:0;flex-shrink:0;}
+  .logo-eyebrow,.logo-sub{display:none;}
+  .logo-brand{font-size:15px;}
+  .top-title-row{flex-direction:column;gap:8px;padding:10px 14px 8px;}
+  .top-title{font-size:20px;margin-bottom:3px;}
+  .top-breadcrumb{font-size:8.5px;letter-spacing:1.2px;line-height:1.6;}
+  .stats-inline{width:100%;display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:center;}
+  .stats-inline .si-div,.si-hide-m{display:none;}
+  .si{align-items:flex-start;}
+  .si-val{font-size:18px;}
+  .si-lbl{font-size:8px;letter-spacing:1.2px;}
+  .lang-wrap{margin-left:0!important;}
+  .lang-btn{padding:8px 13px;font-size:11px;}
+  .tabs-bar{padding:0 6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+  .tabs-bar::-webkit-scrollbar{display:none;}
+  .tab-btn{padding:14px 13px;font-size:10px;letter-spacing:1.5px;white-space:nowrap;flex-shrink:0;}
+  .tab-bullet,.upd-txt{display:none;}
+
+  .layout{display:block;min-height:0;}
+  .main{padding:12px;}
+
+  /* filters = slide-in drawer */
+  .sidebar{display:block;position:fixed;top:0;left:0;bottom:0;height:auto;width:min(88vw,360px);min-width:0;
+    z-index:310;padding:0 16px 24px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+    transform:translateX(-102%);transition:transform .25s ease;}
+  .sidebar.mob-open{transform:none;box-shadow:8px 0 30px rgba(0,0,0,.3);}
+  .sidebar-overlay{z-index:305;}
+  .sb-title-desktop{display:none;}
+  .sb-mob-head{display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:2;
+    background:var(--white);padding:14px 0 12px;margin-bottom:8px;border-bottom:1px solid var(--border);}
+  .sb-close{width:40px;height:40px;border:none;background:var(--cream);border-radius:50%;font-size:16px;cursor:pointer;}
+  .sb-apply-bar{display:block;position:sticky;bottom:0;background:var(--white);padding:12px 0 calc(12px + env(safe-area-inset-bottom));margin-top:14px;border-top:1px solid var(--border);}
+  .sb-apply{width:100%;min-height:48px;background:var(--red);color:#fff;border:none;border-radius:var(--radius);font-family:var(--font-sans);font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;}
+  /* 16px inputs stop iOS from zooming the page on focus; 44px = comfortable thumb target */
+  .fg select,.fg input[type=text],.fg input[type=number],.range-in,.hood-input,.search-wrap input,.sort-sel,#sbSearch{font-size:16px!important;min-height:44px;}
+  .hood-wrap{min-height:44px;padding:6px 10px;}
+  .hood-opts{max-height:42vh;}
+  .hood-opt{padding:13px 12px;font-size:15px;}
+  .hood-tag{font-size:12px;padding:5px 10px;}
+  .fg label{font-size:10.5px;}
+  .src-cb{padding:11px 8px;}
+  .src-cb input{width:22px;height:22px;}
+  .src-lbl{font-size:14px;}
+  .src-cnt{font-size:12px;}
+  .feat-toggle{padding:10px 15px;font-size:13px;}
+  .btn-reset{padding:14px;font-size:11px;}
+  .mob-filter-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:auto;height:48px;border-radius:24px;padding:0 22px;
+    left:50%;right:auto;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));
+    font-family:var(--font-sans);font-size:12px;font-weight:700;letter-spacing:1.5px;white-space:nowrap;}
+
+  /* toolbar */
+  .toolbar{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:12px;}
+  .search-wrap{min-width:0;}
+  .sort-sel{width:100%;}
+  .res-count{font-size:12px;}
+
+  /* cards */
+  .cards-grid{grid-template-columns:1fr;gap:14px;padding-bottom:84px;}
+  .card:hover{transform:none;box-shadow:var(--shadow);}
+  .card:hover .card-img{transform:none;}
+  .card-img-wrap{height:210px;}
+  .card-hdr{padding:12px 14px;}
+  .card-price{font-size:25px;}
+  .card-name{font-size:17px;padding:12px 14px 4px;}
+  .card-loc{font-size:12.5px;}
+  .spec{font-size:12.5px;padding:5px 11px;}
+  .sbadge,.excl-badge,.feat-badge,.dom-badge,.price-drop{font-size:10px;}
+  .alt-badge{font-size:10.5px;padding:7px 11px;}
+  .card-cb{width:22px;height:22px;}
+  .card-ftr{padding:2px 14px;}
+  .card-link{font-size:12px;min-height:46px;padding:0 2px;}
+  .btn-more{width:100%;padding:16px;font-size:11.5px;}
+  .grid-select-bar{flex-direction:column;align-items:stretch;gap:10px;}
+
+  /* analysis tab */
+  .ana-section{max-width:100%;}
+  .ana-title{font-size:22px;}
+  .ana-form{padding:16px;}
+  .fg2 select,.fg2 input{font-size:16px;min-height:44px;}
+  .comp-grid{grid-template-columns:1fr;max-height:none;}
+  .comp-bar{flex-wrap:wrap;gap:8px;}
+  .range-box{padding:12px 8px;}
+  .rv{font-size:15px;}
+  .share-toast{bottom:90px;}
+  body.tab-analysis .mob-filter-btn{display:none;}
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 </head>
@@ -333,12 +432,12 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
       <div class="stats-inline">
         <div class="si"><span class="si-val" id="s-total">—</span><span class="si-lbl">LISTINGS</span></div>
         <div class="si-div"></div>
-        <div class="si"><span class="si-val" id="s-avg">—</span><span class="si-lbl">AVG PRICE</span></div>
-        <div class="si-div"></div>
-        <div class="si"><span class="si-val" id="s-src">—</span><span class="si-lbl">SOURCES</span></div>
+        <div class="si"><span class="si-val" id="s-avg">—</span><span class="si-lbl">MEDIAN PRICE</span></div>
+        <div class="si-div si-hide-m"></div>
+        <div class="si si-hide-m"><span class="si-val" id="s-src">—</span><span class="si-lbl">SOURCES</span></div>
         <div class="si-div"></div>
         <div class="si"><span class="si-val" id="s-min">—</span><span class="si-lbl">MIN PRICE</span></div>
-        <div style="margin-left:12px">
+        <div class="lang-wrap" style="margin-left:12px">
           <div class="lang-toggle">
             <button class="lang-btn active" onclick="setLang('en')">EN</button>
             <button class="lang-btn" onclick="setLang('es')">ES</button>
@@ -358,11 +457,15 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
 
 <!-- Mobile sidebar toggle -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileSidebar()"></div>
-<button class="mob-filter-btn" onclick="toggleMobileSidebar()" title="Filters">⚙</button>
+<button class="mob-filter-btn" onclick="toggleMobileSidebar()" aria-label="Filters">⚙ <span data-en="FILTERS" data-es="FILTROS">FILTERS</span></button>
 
 <div class="layout">
   <aside class="sidebar">
-    <div class="sb-title" data-en="FILTERS" data-es="FILTROS">FILTERS</div>
+    <div class="sb-mob-head">
+      <div class="sb-title" style="margin:0" data-en="FILTERS" data-es="FILTROS">FILTERS</div>
+      <button class="sb-close" onclick="closeMobileSidebar()" aria-label="Close">✕</button>
+    </div>
+    <div class="sb-title sb-title-desktop" data-en="FILTERS" data-es="FILTROS">FILTERS</div>
     <div class="fg">
       <label data-en="SEARCH (building, name...)" data-es="BUSCAR (edificio, nombre...)">SEARCH (building, name...)</label>
       <div style="position:relative">
@@ -434,6 +537,7 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);min-
       <div id="dupToggle"></div>
     </div>
     <button class="btn-reset" onclick="resetFilters()" data-en="RESET ALL FILTERS" data-es="REINICIAR FILTROS">RESET ALL FILTERS</button>
+    <div class="sb-apply-bar"><button class="sb-apply" onclick="closeMobileSidebar()"><span data-en="SHOW RESULTS" data-es="VER RESULTADOS">SHOW RESULTS</span> · <span id="sbCount">0</span></button></div>
   </aside>
 
   <main class="main">
@@ -600,6 +704,7 @@ function setLang(lang) {
 // ── TABS ──────────────────────────────────────────────
 function setTab(tab) {
   currentTab = tab;
+  document.body.classList.toggle('tab-analysis', tab === 'analysis');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab)?.classList.add('active');
   document.getElementById('listingsView').style.display = tab === 'analysis' ? 'none' : 'block';
@@ -676,13 +781,26 @@ function openAllLinks(e, urls) {
 
 // ── MOBILE SIDEBAR ────────────────────────────────────
 function toggleMobileSidebar() {
-  document.querySelector('.sidebar')?.classList.toggle('mob-open');
-  document.getElementById('sidebarOverlay')?.classList.toggle('mob-open');
+  const open = document.querySelector('.sidebar')?.classList.toggle('mob-open');
+  document.getElementById('sidebarOverlay')?.classList.toggle('mob-open', !!open);
+  document.body.style.overflow = open ? 'hidden' : '';
 }
 function closeMobileSidebar() {
   document.querySelector('.sidebar')?.classList.remove('mob-open');
   document.getElementById('sidebarOverlay')?.classList.remove('mob-open');
+  document.body.style.overflow = '';
 }
+// On phones only the tab strip stays pinned; the rest of the header scrolls away.
+function fitMobileHeader() {
+  const bar = document.querySelector('.top-bar'), tabs = document.querySelector('.tabs-bar');
+  if (!bar || !tabs) return;
+  const collapse = window.matchMedia('(max-width:768px)').matches ? (bar.offsetHeight - tabs.offsetHeight) : 0;
+  bar.style.setProperty('--hdr-collapse', (-collapse) + 'px');
+}
+window.addEventListener('load', fitMobileHeader);
+window.addEventListener('resize', fitMobileHeader);
+window.addEventListener('orientationchange', () => setTimeout(fitMobileHeader, 250));
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitMobileHeader);
 
 // ── NEIGHBORHOOD NORMALIZATION ────────────────────────
 // Applied client-side so existing data.js is fixed immediately (no rescrape needed).
@@ -962,9 +1080,14 @@ function applyFilters() {
   // Update stats bar
   const prices = filtered.map(l => getPrice(l, tab)).filter(Boolean);
   document.getElementById('s-total').textContent = filtered.length.toLocaleString('en-US');
-  document.getElementById('s-avg').textContent   = prices.length ? fmt(Math.round(prices.reduce((a,b) => a+b, 0) / prices.length)) : '—';
-  document.getElementById('s-min').textContent   = prices.length ? fmt(Math.min(...prices)) : '—';
-  const sMax = document.getElementById('s-max'); if (sMax) sMax.textContent = prices.length ? fmt(Math.max(...prices)) : '—';
+  // Median (robust to the odd bad price) and a min that ignores placeholder prices like $1.
+  // NB: no Math.min(...bigArray) — iPhone Safari throws RangeError above ~65k arguments.
+  const sortedPrices = prices.slice().sort((a, b) => a - b);
+  const floorPrice = tab === 'rent' ? 100 : 1000;
+  let minP = Infinity; for (const p of sortedPrices) { if (p >= floorPrice) { minP = p; break; } }
+  document.getElementById('s-avg').textContent   = sortedPrices.length ? fmt(Math.round(sortedPrices[sortedPrices.length >> 1])) : '—';
+  document.getElementById('s-min').textContent   = isFinite(minP) ? fmt(minP) : '—';
+  const sMax = document.getElementById('s-max'); if (sMax) sMax.textContent = sortedPrices.length ? fmt(sortedPrices[sortedPrices.length - 1]) : '—';
   document.getElementById('s-src').textContent   = new Set(filtered.map(l => l.source)).size;
 
   // Keep existing selections that are still in the filtered set
@@ -1041,10 +1164,10 @@ function renderCards() {
     if (listing._alts && listing._alts.length) {
       const altBadges = listing._alts.map(alt => {
         const altSrc = SOURCES[alt.source] || { bg:'#eee', text:'#444', label: alt.source };
-        return `<span class="alt-badge" style="background:${altSrc.bg};color:${altSrc.text}"
-          onclick="event.stopPropagation();window.open('${alt.link}','_blank')">
+        return `<a class="alt-badge" style="background:${altSrc.bg};color:${altSrc.text};text-decoration:none"
+          href="${alt.link}" target="_blank" rel="noopener noreferrer">
           ${altSrc.label}${alt.price ? ' ' + fmt(alt.price) : ''}
-        </span>`;
+        </a>`;
       }).join('');
       const allUrls = [listing.link, ...listing._alts.map(a => a.link)].filter(Boolean);
       altSection = `<div class="card-alts">
@@ -1056,11 +1179,10 @@ function renderCards() {
     }
 
     const viewLink = listing.link
-      ? `<a class="card-link" onclick="event.stopPropagation()" href="${listing.link}" target="_blank">VIEW →</a>`
+      ? `<a class="card-link" href="${listing.link}" target="_blank" rel="noopener noreferrer">VIEW →</a>`
       : '<span></span>';
 
-    return `<div class="card${listing.link ? ' has-link' : ''}${listing.exclusive ? ' card-excl' : ''}${isSelected ? ' card-selected' : ''}"
-      onclick="${listing.link ? `window.open('${listing.link}','_blank')` : ''}">
+    return `<div class="card${listing.link ? ' has-link' : ''}${listing.exclusive ? ' card-excl' : ''}${isSelected ? ' card-selected' : ''}">
   ${imgHtml}
   <div class="card-hdr">
     <div style="display:flex;align-items:center;gap:8px;">
@@ -1089,6 +1211,7 @@ function renderCards() {
   document.getElementById('lmBar').style.display = remaining > 0 ? 'flex' : 'none';
   document.getElementById('lmBtn').textContent = `LOAD MORE (${remaining} more)`;
   document.getElementById('resCnt').textContent = `${filtered.length.toLocaleString()} result${filtered.length !== 1 ? 's' : ''}`;
+  const sbc = document.getElementById('sbCount'); if (sbc) sbc.textContent = filtered.length.toLocaleString();
 }
 
 function loadMore() { visible += PAGE; renderCards(); }
@@ -1396,7 +1519,7 @@ function runAnalysis() {
   if (!prices.length) { alert('Not enough comparable data for this area. Try removing some filters.'); return; }
 
   const avgPrice = Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
-  const minPrice = Math.min(...prices), maxPrice = Math.max(...prices);
+  const minPrice = prices.reduce((m, v) => v < m ? v : m, Infinity), maxPrice = prices.reduce((m, v) => v > m ? v : m, -Infinity);
   const ratio    = userPrice / avgPrice;
   // Position pin based on ratio vs average (not vs outlier-distorted min/max range)
   // ratio 0.70 → 5%  |  1.00 → 50%  |  1.30 → 95%
@@ -1466,7 +1589,13 @@ function runAnalysis() {
 // ── COMPARABLE SELECTION & EXPORT ────────────────────
 function toggleCompCard(card, event, idx, link) {
   if (event.target.type === 'checkbox') return;
-  if (link) window.open(link, '_blank');
+  if (link) openUrl(link);
+}
+// open a URL through a real anchor click (more reliable than window.open on phones / in-app browsers)
+function openUrl(url) {
+  const a = document.createElement('a');
+  a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+  document.body.appendChild(a); a.click(); a.remove();
 }
 function onCompCheck() {
   const cards = document.querySelectorAll('#compGrid .comp-card');
