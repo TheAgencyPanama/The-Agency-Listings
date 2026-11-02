@@ -864,9 +864,10 @@ function alertSummary(c) {
   if (c.q) p.push('“' + c.q + '”');
   return p.join(' · ');
 }
-async function loadAlertAgents() {
+async function loadAlertAgents(silent) {
   const sel = document.getElementById('alAgent'), t = AL[currentLang] || AL.en;
   let names = null;
+  if (sel && sel.options.length <= 1) sel.innerHTML = `<option value="">${currentLang === 'es' ? 'Cargando…' : 'Loading…'}</option>`;
   try { names = JSON.parse(sessionStorage.getItem('al_agents') || 'null'); } catch (e) {}
   if (!names) {
     try {
@@ -875,7 +876,11 @@ async function loadAlertAgents() {
       if (j.ok) { names = j.agents; try { sessionStorage.setItem('al_agents', JSON.stringify(names)); } catch (e) {} }
     } catch (e) {}
   }
-  if (!names) { document.getElementById('alMsg').className = 'al-msg err'; document.getElementById('alMsg').textContent = t.load; return; }
+  if (!names) {
+    if (sel) sel.innerHTML = `<option value="">${t.pick}</option>`;
+    if (!silent) { document.getElementById('alMsg').className = 'al-msg err'; document.getElementById('alMsg').textContent = t.load; }
+    return;
+  }
   let last = ''; try { last = localStorage.getItem('al_agent') || ''; } catch (e) {}
   sel.innerHTML = `<option value="">${t.pick}</option>` + names.map(n => `<option ${n === last ? 'selected' : ''}>${n.replace(/</g, '&lt;')}</option>`).join('');
 }
@@ -910,7 +915,10 @@ async function submitAlert() {
     }
   } catch (e) { msg.className = 'al-msg err'; msg.textContent = t.fail; btn.disabled = false; }
 }
-if (ALERTS_URL) document.addEventListener('DOMContentLoaded', () => { const b = document.getElementById('alertBtn'); if (b) b.style.display = 'inline-flex'; });
+if (ALERTS_URL) document.addEventListener('DOMContentLoaded', () => {
+  const b = document.getElementById('alertBtn'); if (b) b.style.display = 'inline-flex';
+  setTimeout(() => loadAlertAgents(true), 2500);      // warm the agent list so the dialog opens ready
+});
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAlertModal(); });
 
 // ── OPEN MULTIPLE LINKS ───────────────────────────────
